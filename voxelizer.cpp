@@ -26,6 +26,7 @@ struct intersection
     bool exit  = false;     // ray is exiting mesh
     bool touch1 = false;    // touch means the ray is on the surface
     bool touch2 = false;    
+    vector<int> triNum;
 };
 
 void cross_product(vect &p, vect a, vect b);
@@ -181,10 +182,10 @@ int main(int argc, char **argv)
     cout << "vertex:" << S;
     vertexNum = stoi(S);
 
-    int faceNum;
+    int faceAmt;
     DATA >> S;
     cout << "  face:" << S;
-    faceNum = stoi(S);
+    faceAmt = stoi(S);
 
     int edgeNum;
     DATA >> S;
@@ -266,8 +267,8 @@ int main(int argc, char **argv)
         cout << "ray direction: z" << endl;
 
     /* store faces into vector */
-    vector<face> F(faceNum);
-    for (int i = 0; i < faceNum; ++i)
+    vector<face> F(faceAmt);
+    for (int i = 0; i < faceAmt; ++i)
     {
         DATA >> S;
         DATA >> S;
@@ -283,11 +284,12 @@ int main(int argc, char **argv)
     /* store faces into vector */
 
 
-
-    int count = 1;
+    
     vector<vector<vector<intersection>>> pointlist(ny);
     for (int i = 0; i < ny; ++i)
         pointlist[i].resize(nz);
+
+	int count = 0;
     for (auto f : F) // for each triangle
     {
         auto x1 = V[f.v1].x, y1 = V[f.v1].y, z1 = V[f.v1].z;
@@ -343,58 +345,6 @@ int main(int argc, char **argv)
             //cout << "voxelmin(y, z): " << trivoxelymin <<" "<< trivoxelzmin << endl;
 
             intersection point;
-            if (dotproduct < 0)
-                point.enter = true;
-            else if (dotproduct > 0)
-                point.exit = true;
-            /*else             
-            {    
-                point.touch = true;
-                if (y1 == y2 && z1 == z2)
-                {
-                    if (x1 < x2)
-                    {
-                        x2 = x3;
-                        y2 = y3;
-                        z2 = z3;
-                    } else {
-                        x1 = x3;
-                        y1 = y3;
-                        z1 = z3;
-                    }
-                }
-                else if (y2 == y3 && z2 == z3)
-                {
-                    if (x3 < x2)
-                    {
-                        x2 = x3;
-                    }
-                }
-                else if (y1 == y3 && z1 == z3)
-                {
-                    if (x3 < x1)
-                    {
-                        x1 = x3;
-                    }
-                } else {
-                    if (x1 < x2)
-                    {
-                        if (x3 < x2)
-                        {
-                            x2 = x3;
-                            y2 = y3;
-                            z2 = z3;
-                        }
-                    } 
-                    else if (x3 < x1)
-                    {
-                        x1 = x3;
-                        y1 = y3;
-                        z1 = z3;
-                    }                    
-                }
-            }*/
-            
 
             unsigned i = numy;
             for (auto y = trivoxelymin; y <= triboundmax.y; y+=voxelsize.y, i++)
@@ -408,8 +358,22 @@ int main(int argc, char **argv)
                     vertex C = {0, y3, z3};
                     if (intersectant(dir, P, A, B, C))
                     {
-                        if (dotproduct == 0)
-                        {
+			            if (dotproduct < 0)
+			            {
+			                point.enter = true;
+                        	point.triNum.push_back(count);
+                        	point.value = (d - normal.y*P.y - normal.z*P.z)/normal.x;
+                        	insert(pointlist[i][j], point);
+			            }
+			            else if (dotproduct > 0)
+			            {
+			                point.exit = true;
+                        	point.triNum.push_back(count);
+	                        point.value = (d - normal.y*P.y - normal.z*P.z)/normal.x;
+	                        insert(pointlist[i][j], point);
+			            } 
+			            else 
+			            {
                             rational<int> value1 = -1, value2 = -1, temp[] = {-1, -1, -1, -1, -1, -1}; 
                             if (y1 != y2)
                                 temp[0] = (x2 - x1) * (y - y1) / (y2 - y1) + x1;
@@ -444,23 +408,33 @@ int main(int argc, char **argv)
 
                             if (value1 < value2)
                             {
+                        		point.triNum.push_back(count);
                             	point.value = value1;
                             	point.touch1 = true;
                             	insert(pointlist[i][j], point);
                             	point.value = value2;
+                            	point.touch1 = false;
+                            	point.touch2 = true;
+                            	insert(pointlist[i][j], point);
+                            } 
+                            else if (value1 > value2)
+                            {
+                        		point.triNum.push_back(count);
+                            	point.value = value2;
+                            	point.touch1 = true;
+                            	insert(pointlist[i][j], point);
+                            	point.value = value1;
+                            	point.touch1 = false;
                             	point.touch2 = true;
                             	insert(pointlist[i][j], point);
                             } else {
-                            	point.value = value2;
-                            	point.touch1 = true;
-                            	insert(pointlist[i][j], point);
+                            	point.triNum.push_back(count);
                             	point.value = value1;
+                            	point.touch1 = true;
                             	point.touch2 = true;
                             	insert(pointlist[i][j], point);
                             }
                         }
-                        else point.value = (d - normal.y*P.y - normal.z*P.z)/normal.x;
-                        insert(pointlist[i][j], point);
                     }
                 }
             }
@@ -472,6 +446,7 @@ int main(int argc, char **argv)
         {
         }
         /* triangle bounding box */
+        count++;
     }
 
 /*    cout<<"------------------------------"<<endl;
@@ -537,8 +512,7 @@ int main(int argc, char **argv)
                         if ((*pt).enter == true && (*pt).exit == false)
                         {   
                             while (!((*pt).enter == false && (*pt).touch1 == false && (*pt).touch2 == false && (*pt).exit == true
-                            	  || (*pt).enter == false && (*pt).touch1 == false && (*pt).touch2 == true  && (*pt).exit == true
-                            	  || (*pt).enter == false && (*pt).touch1 == true  && (*pt).touch2 == true  && (*pt).exit == true))
+                            	  || (*pt).enter == false && (*pt).touch2 == true  && (*pt).exit == true))
                             {
                                 pt++;
                                 if (pt == pointlist[i][j].end())
