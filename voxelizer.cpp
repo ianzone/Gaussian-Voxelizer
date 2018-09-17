@@ -23,8 +23,9 @@ struct intersection
 {
     rational<int> value;    // coordinate of ray-mesh interSection point
     bool enter = false;     // ray is entering meSh
-    bool touch = false;     // touch means the ray is on the surface
     bool exit  = false;     // ray is exiting mesh
+    bool touch1 = false;    // touch means the ray is on the surface
+    bool touch2 = false;    
 };
 
 void cross_product(vect &p, vect a, vect b);
@@ -55,6 +56,34 @@ int intersectant(vect dir, vertex P, vertex A, vertex B, vertex C)
         if (papb.z <= 0 && pbpc.z <= 0 && pcpa.z <= 0 || papb.z >= 0 && pbpc.z >= 0 && pcpa.z >= 0)
             return 1;
     return 0;
+}
+
+void insert(vector<intersection> &pl, intersection &point);
+void insert(vector<intersection> &pl, intersection &point)
+{
+	if (pl.empty())
+        pl.push_back(point);
+    else for (auto pt = pl.begin(); pt != pl.end(); pt++)
+    {
+        if (point.value == (*pt).value)
+        {
+            (*pt).enter = ((*pt).enter || point.enter);
+            (*pt).exit  = ((*pt).exit  || point.exit);
+            (*pt).touch1 = ((*pt).touch1 || point.touch1);
+            (*pt).touch2 = ((*pt).touch2 || point.touch2);
+            break;
+        }
+        else if (point.value < (*pt).value)
+        {
+            pl.insert(pt, point);
+            break;
+        }
+        if (pt == pl.end() - 1)
+        {
+            pl.push_back(point);
+            break;
+        }
+    }
 }
 
 int main(int argc, char **argv)
@@ -318,7 +347,7 @@ int main(int argc, char **argv)
                 point.enter = true;
             else if (dotproduct > 0)
                 point.exit = true;
-            else             
+            /*else             
             {    
                 point.touch = true;
                 if (y1 == y2 && z1 == z2)
@@ -364,7 +393,7 @@ int main(int argc, char **argv)
                         z1 = z3;
                     }                    
                 }
-            }
+            }*/
             
 
             unsigned i = numy;
@@ -381,42 +410,57 @@ int main(int argc, char **argv)
                     {
                         if (dotproduct == 0)
                         {
-                            //rational<int> temp1 = -1, temp2 = -1, temp3 = -1;
+                            rational<int> value1 = -1, value2 = -1, temp[] = {-1, -1, -1, -1, -1, -1}; 
                             if (y1 != y2)
-                                point.value = (x2 - x1) * (y - y1) / (y2 - y1) + x1;                            
-                            else                           
-                                point.value = (x2 - x1) * (z - z1) / (z2 - z1) + x1;
-                            
-                            // if (point.value == x1 || point.value == x2)
-                            // {
-                            //     continue;
-                            // }
+                                temp[0] = (x2 - x1) * (y - y1) / (y2 - y1) + x1;
+                            if (z1 != z2)
+                                temp[1] = (x2 - x1) * (z - z1) / (z2 - z1) + x1;
+                            if (y2 != y3)
+                            	temp[2] = (x2 - x3) * (z - z3) / (z2 - z3) + x3;
+                            if (z2 != z3)
+                            	temp[3] = (x2 - x3) * (z - z3) / (z2 - z3) + x3;
+                            if (y1 != y3)
+                                temp[4] = (x3 - x1) * (y - y1) / (y3 - y1) + x1;
+                            if (z1 != z3)
+                                temp[5] = (x3 - x1) * (z - z1) / (z3 - z1) + x1;
 
+                            int t = 0;
+                            for (t ; t < 6; ++t)
+                            {
+                            	if (temp[t] != -1)
+                            	{
+                            		value1 = temp[t];
+                            		break;
+                            	}
+                            }
+                            for (++t; t < 6; ++t)
+                            {
+                            	if (temp[t] != -1)
+                            	{
+                            		value2 = temp[t];
+                            		break;
+                            	}
+                            }
+
+                            if (value1 < value2)
+                            {
+                            	point.value = value1;
+                            	point.touch1 = true;
+                            	insert(pointlist[i][j], point);
+                            	point.value = value2;
+                            	point.touch2 = true;
+                            	insert(pointlist[i][j], point);
+                            } else {
+                            	point.value = value2;
+                            	point.touch1 = true;
+                            	insert(pointlist[i][j], point);
+                            	point.value = value1;
+                            	point.touch2 = true;
+                            	insert(pointlist[i][j], point);
+                            }
                         }
                         else point.value = (d - normal.y*P.y - normal.z*P.z)/normal.x;
-
-                        if (pointlist[i][j].empty())
-                            pointlist[i][j].push_back(point);
-                        else for (auto pt = pointlist[i][j].begin(); pt != pointlist[i][j].end(); pt++)
-                        {
-                            if (point.value == (*pt).value)
-                            {
-                                (*pt).enter = ((*pt).enter || point.enter);
-                                (*pt).touch = ((*pt).touch || point.touch);
-                                (*pt).exit = ((*pt).exit || point.exit);
-                                break;
-                            }
-                            else if (point.value < (*pt).value)
-                            {
-                                pointlist[i][j].insert(pt, point);
-                                break;
-                            }
-                            if (pt == pointlist[i][j].end() - 1)
-                            {
-                                pointlist[i][j].push_back(point);
-                                break;
-                            }
-                        }                        
+                        insert(pointlist[i][j], point);
                     }
                 }
             }
@@ -431,19 +475,21 @@ int main(int argc, char **argv)
     }
 
 /*    cout<<"------------------------------"<<endl;
-    for (int i = 0; i < ny; ++i)
+    for (int i = 0; i < ny/10; ++i)
     {
-        for (int j = 0; j < nz; ++j)
+        for (int j = 0; j < nz/10; ++j)
         {
             for (auto pot : pointlist[i][j])
             {
-                cout<<"("<<i<<", "<<j<<", "<<rational_cast<unsigned>(pot.value / voxelsize.x)<<", "<<pot.value<<") ";
+                cout<<"(y="<<i<<", z="<<j<<", x="<<rational_cast<unsigned>(pot.value / voxelsize.x)<<", value="<<pot.value<<") ";
                 if (pot.enter)
                     cout<<"enter ";
                 if (pot.exit)
                     cout<<"exit ";
-                if (pot.touch)
-                    cout<<"touch";
+                if (pot.touch1)
+                    cout<<"touch1";
+                if (pot.touch2)
+                    cout<<"touch2";
                 cout<< endl;
             }
         }
@@ -463,7 +509,7 @@ int main(int argc, char **argv)
         {
             if (!pointlist[i][j].empty())
             {   
-                cout<<"listsize: "<<pointlist[i][j].size()<<endl;
+                /*cout<<"list_size: "<<pointlist[i][j].size()<<endl;
                 int abc = 1; cout<<"y = "<<i<<", z = "<<j<<endl;
                 for (auto p : pointlist[i][j])
                 {
@@ -472,10 +518,12 @@ int main(int argc, char **argv)
                     cout<<"enter ";
                     if (p.exit)
                         cout<<"exit ";
-                    if (p.touch)
-                        cout<<"touch";
+	                if (pot.touch1)
+	                    cout<<"touch1";
+	                if (pot.touch2)
+	                    cout<<"touch2";
                     cout<< endl;
-                }cout<<endl;
+                }cout<<endl;*/
 
                 for (auto pt = pointlist[i][j].begin(); pt != pointlist[i][j].end(); pt++)
                 {                    
@@ -488,7 +536,9 @@ int main(int argc, char **argv)
                     {
                         if ((*pt).enter == true && (*pt).exit == false)
                         {   
-                            while (!((*pt).enter == false && (*pt).touch == false && (*pt).exit == true))
+                            while (!((*pt).enter == false && (*pt).touch1 == false && (*pt).touch2 == false && (*pt).exit == true
+                            	  || (*pt).enter == false && (*pt).touch1 == false && (*pt).touch2 == true  && (*pt).exit == true
+                            	  || (*pt).enter == false && (*pt).touch1 == true  && (*pt).touch2 == true  && (*pt).exit == true))
                             {
                                 pt++;
                                 if (pt == pointlist[i][j].end())
@@ -525,10 +575,8 @@ int main(int argc, char **argv)
         {
             for (int k = 0; k < nx; ++k)
             {
-                /*if (voxel[i][j][k] == 1)
-                {
-                    cout<<"("<<i<<", "<<j<<", "<<k<<")"<<endl;
-                }*/
+                //if (voxel[i][j][k] == 1)
+                //    cout<<"("<<i<<", "<<j<<", "<<k<<")"<<endl;
                 output << voxel[i][j][k];
             }
         }
