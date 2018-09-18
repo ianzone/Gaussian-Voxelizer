@@ -284,10 +284,10 @@ int main(int argc, char **argv)
     /* store faces into vector */
 
 
-    
-    vector<vector<vector<intersection>>> pointlist(ny);
+    vector<vect> normalList(faceAmt);
+    vector<vector<vector<intersection>>> pointList(ny);
     for (int i = 0; i < ny; ++i)
-        pointlist[i].resize(nz);
+        pointList[i].resize(nz);
 
 	int count = 0;
     for (auto f : F) // for each triangle
@@ -304,6 +304,7 @@ int main(int argc, char **argv)
         vector2.z = z3 - z2;
 
         cross_product(normal, vector1, vector2);
+        normalList.push_back(normal);
         auto d = normal.x*x1 + normal.y*y1 + normal.z*z1;
         //cout << endl << count++ << " triangle formula: " << normal.x <<"x + "<< normal.y <<"y + "<< normal.z <<"z = "<< d << endl;
 
@@ -363,14 +364,14 @@ int main(int argc, char **argv)
 			                point.enter = true;
                         	point.triNum.push_back(count);
                         	point.value = (d - normal.y*P.y - normal.z*P.z)/normal.x;
-                        	insert(pointlist[i][j], point);
+                        	insert(pointList[i][j], point);
 			            }
 			            else if (dotproduct > 0)
 			            {
 			                point.exit = true;
                         	point.triNum.push_back(count);
 	                        point.value = (d - normal.y*P.y - normal.z*P.z)/normal.x;
-	                        insert(pointlist[i][j], point);
+	                        insert(pointList[i][j], point);
 			            } 
 			            else 
 			            {
@@ -411,28 +412,28 @@ int main(int argc, char **argv)
                         		point.triNum.push_back(count);
                             	point.value = value1;
                             	point.touch1 = true;
-                            	insert(pointlist[i][j], point);
+                            	insert(pointList[i][j], point);
                             	point.value = value2;
                             	point.touch1 = false;
                             	point.touch2 = true;
-                            	insert(pointlist[i][j], point);
+                            	insert(pointList[i][j], point);
                             } 
                             else if (value1 > value2)
                             {
                         		point.triNum.push_back(count);
                             	point.value = value2;
                             	point.touch1 = true;
-                            	insert(pointlist[i][j], point);
+                            	insert(pointList[i][j], point);
                             	point.value = value1;
                             	point.touch1 = false;
                             	point.touch2 = true;
-                            	insert(pointlist[i][j], point);
+                            	insert(pointList[i][j], point);
                             } else {
                             	point.triNum.push_back(count);
                             	point.value = value1;
                             	point.touch1 = true;
                             	point.touch2 = true;
-                            	insert(pointlist[i][j], point);
+                            	insert(pointList[i][j], point);
                             }
                         }
                     }
@@ -442,19 +443,20 @@ int main(int argc, char **argv)
         else if (dir.y == 1)
         {
         }
-        else if (dir.z == 1)
+        else
         {
         }
         /* triangle bounding box */
         count++;
     }
 
+
 /*    cout<<"------------------------------"<<endl;
     for (int i = 0; i < ny/10; ++i)
     {
         for (int j = 0; j < nz/10; ++j)
         {
-            for (auto pot : pointlist[i][j])
+            for (auto pot : pointList[i][j])
             {
                 cout<<"(y="<<i<<", z="<<j<<", x="<<rational_cast<unsigned>(pot.value / voxelsize.x)<<", value="<<pot.value<<") ";
                 if (pot.enter)
@@ -471,6 +473,7 @@ int main(int argc, char **argv)
     }
     cout<<"------------------------------"<<endl;*/
 
+
     vector<vector<vector<unsigned char>>> voxel(ny);
     for (int i = 0; i < ny; ++i)
         voxel[i].resize(nz);
@@ -482,11 +485,11 @@ int main(int argc, char **argv)
     {
         for (int j = 0; j < nz; ++j)
         {
-            if (!pointlist[i][j].empty())
+            if (!pointList[i][j].empty())
             {   
-                /*cout<<"list_size: "<<pointlist[i][j].size()<<endl;
+                /*cout<<"list_size: "<<pointList[i][j].size()<<endl;
                 int abc = 1; cout<<"y = "<<i<<", z = "<<j<<endl;
-                for (auto p : pointlist[i][j])
+                for (auto p : pointList[i][j])
                 {
                     cout<<abc++<<" point "<<p.value<<" ";
                     if (p.enter)
@@ -500,14 +503,14 @@ int main(int argc, char **argv)
                     cout<< endl;
                 }cout<<endl;*/
 
-                for (auto pt = pointlist[i][j].begin(); pt != pointlist[i][j].end(); pt++)
+                for (auto pt = pointList[i][j].begin(); pt != pointList[i][j].end(); pt++)
                 {                    
-                    auto start = (*pt).value; 
-                    auto end = start;           
-                    unsigned k1 = rational_cast<unsigned>(start / voxelsize.x);
+                    auto startValue = (*pt).value; 
+                    auto endValue = startValue;           
+                    unsigned k1 = rational_cast<unsigned>(startValue / voxelsize.x);
                     auto voxelcenter1 = k1*voxelsize.x;
 
-                    if (pointlist[i][j].size() > 1)
+                    if (pointList[i][j].size() > 1)
                     {
                         if ((*pt).enter == true && (*pt).exit == false)
                         {   
@@ -515,17 +518,17 @@ int main(int argc, char **argv)
                             	  || (*pt).enter == false && (*pt).touch2 == true  && (*pt).exit == true))
                             {
                                 pt++;
-                                if (pt == pointlist[i][j].end())
+                                if (pt == pointList[i][j].end())
                                     cout<< "over"<<endl;                                
                             }
-                            end = (*pt).value;
+                            endValue = (*pt).value;
                             
-                            if (voxelcenter1 < start)
+                            if (voxelcenter1 < startValue)
                                 k1++;
                             
-                            unsigned k2 = rational_cast<unsigned>(end / voxelsize.x);
+                            unsigned k2 = rational_cast<unsigned>(endValue / voxelsize.x);
                             auto voxelcenter2 = k2*voxelsize.x;
-                            if (voxelcenter2 > end)
+                            if (voxelcenter2 > endValue)
                                 k2--;
                             
                             while (k1 <= k2)
