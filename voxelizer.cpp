@@ -91,11 +91,12 @@ int main(int argc, char **argv)
 {
     /* reading inputs */
     argv++; argc--;
-    string off, raw;
+    string input, output, checkfile;
     vect dir = {1, 0, 0};
     int nx = 128, ny = 128, nz = 128;
     int sxmin = 0, symin = 0, szmin = 0;
     int sxmax = 255, symax = 255, szmax = 255;
+    bool checkmode = false;
     while (argc > 0)
     {
         if ((*argv)[0] == '-')
@@ -103,12 +104,12 @@ int main(int argc, char **argv)
             if (!strcmp(*argv, "-i"))
             {
                 argv++; argc--;
-                off = *argv;
+                input = *argv;
             }
             else if (!strcmp(*argv, "-o"))
             {
                 argv++; argc--;
-                raw = *argv;
+                output = *argv;
             }
             else if (!strcmp(*argv, "-d"))
             {
@@ -153,22 +154,35 @@ int main(int argc, char **argv)
                     exit(3);
                 }
             }
+            else if (!strcmp(*argv, "-check"))
+            {
+                argv++; argc--;
+                checkfile = *argv;
+                checkmode = true;
+            }
         }
         argv++; argc--;
     }
 
-    ifstream DATA(off);
+    ifstream DATA(input);
     if(!DATA)
     {
         cerr<<"can not open input file!"<<endl;
         exit(1);
     }
 
-    ofstream output(raw);
-    if(!output)
+    ofstream OUTPUT(output);
+    if(!OUTPUT)
     {
         cerr<<"can not open output file!"<<endl;
         exit(2);
+    }
+    
+    ifstream checkdata(checkfile);
+    if(!checkdata)
+    {
+        cerr<<"can not open check file!"<<endl;
+        exit(4);
     }
     /* reading inputs */
 
@@ -194,27 +208,27 @@ int main(int argc, char **argv)
     /* skip first two lines */
 
     /* shift mesh space, store cooridinates as rational number and check user input*/
-    vector<vertex> V(vertexNum);
+    vector<vertex> Vertex(vertexNum);
 
     DATA >> S;
     auto len = S.size();
     double s = stod(S);
     rational<int> x(s*pow(10, len), pow(10, len));
-    V[0].x = x - sxmin;
+    Vertex[0].x = x - sxmin;
     auto xmin = x, xmax = x;
 
     DATA >> S;
     len = S.size();
     s = stod(S);
     rational<int> y(s*pow(10, len), pow(10, len));
-    V[0].y = y - symin;
+    Vertex[0].y = y - symin;
     auto ymin = y, ymax = y;
 
     DATA >> S;
     len = S.size();
     s = stod(S);
     rational<int> z(s*pow(10, len), pow(10, len));
-    V[0].z = z - szmin;
+    Vertex[0].z = z - szmin;
     auto zmin = z, zmax = z;
 
     for (int i = 1; i < vertexNum; i++)
@@ -223,7 +237,7 @@ int main(int argc, char **argv)
         len = S.size();
         s = stod(S);
         rational<int> x(s*pow(10, len), pow(10, len));
-        V[i].x = x - sxmin;
+        Vertex[i].x = x - sxmin;
         if (x < xmin)
             xmin = x;
         else if (x > xmax)
@@ -233,7 +247,7 @@ int main(int argc, char **argv)
         len = S.size();
         s = stod(S);
         rational<int> y(s*pow(10, len), pow(10, len));
-        V[i].y = y - symin;
+        Vertex[i].y = y - symin;
         if (y < ymin)
             ymin = y;
         else if (y > ymax)
@@ -243,7 +257,7 @@ int main(int argc, char **argv)
         len = S.size();
         s = stod(S);
         rational<int> z(s*pow(10, len), pow(10, len));
-        V[i].z = z - szmin;
+        Vertex[i].z = z - szmin;
         if (z < zmin)
             zmin = z;
         else if (z > zmax)
@@ -267,19 +281,19 @@ int main(int argc, char **argv)
         cout << "ray direction: z" << endl;
 
     /* store faces into vector */
-    vector<face> F(faceAmt);
+    vector<face> Face(faceAmt);
     for (int i = 0; i < faceAmt; ++i)
     {
         DATA >> S;
         DATA >> S;
         unsigned s = stoi(S);
-        F[i].v1 = s;
+        Face[i].v1 = s;
         DATA >> S;
         s = stoi(S);
-        F[i].v2 = s;
+        Face[i].v2 = s;
         DATA >> S;
         s = stoi(S);
-        F[i].v3 = s;
+        Face[i].v3 = s;
     }
     /* store faces into vector */
 
@@ -290,11 +304,11 @@ int main(int argc, char **argv)
         pointList[i].resize(nz);
 
 	int count = 0;
-    for (auto f : F) // for each triangle
+    for (auto f : Face) // for each triangle
     {
-        auto x1 = V[f.v1].x, y1 = V[f.v1].y, z1 = V[f.v1].z;
-        auto x2 = V[f.v2].x, y2 = V[f.v2].y, z2 = V[f.v2].z;
-        auto x3 = V[f.v3].x, y3 = V[f.v3].y, z3 = V[f.v3].z;
+        auto x1 = Vertex[f.v1].x, y1 = Vertex[f.v1].y, z1 = Vertex[f.v1].z;
+        auto x2 = Vertex[f.v2].x, y2 = Vertex[f.v2].y, z2 = Vertex[f.v2].z;
+        auto x3 = Vertex[f.v3].x, y3 = Vertex[f.v3].y, z3 = Vertex[f.v3].z;
         vect vector1, vector2, normal;
         vector1.x = x2 - x1;
         vector1.y = y2 - y1;
@@ -487,22 +501,7 @@ int main(int argc, char **argv)
         {
             if (!pointList[i][j].empty())
             {   
-                /*cout<<"list_size: "<<pointList[i][j].size()<<endl;
-                int abc = 1; cout<<"y = "<<i<<", z = "<<j<<endl;
-                for (auto p : pointList[i][j])
-                {
-                    cout<<abc++<<" point "<<p.value<<" ";
-                    if (p.enter)
-                    cout<<"enter ";
-                    if (p.exit)
-                        cout<<"exit ";
-	                if (pot.touch1)
-	                    cout<<"touch1";
-	                if (pot.touch2)
-	                    cout<<"touch2";
-                    cout<< endl;
-                }cout<<endl;*/
-
+                
                 for (auto pt = pointList[i][j].begin(); pt != pointList[i][j].end(); pt++)
                 {                    
                     auto startValue = (*pt).value; 
@@ -546,20 +545,100 @@ int main(int argc, char **argv)
         }
     }
 
+    unsigned char check;
+    vector<int> checkvox = {-1, -1, -1};
+    vector<vector<int>> checkvoxlist1, checkvoxlist2;
+    vector<vector<vector<intersection>>> checkpointlist1(ny);
+    for (int i = 0; i < ny; ++i)
+        checkpointlist1[i].resize(nz);
+    auto checkpointlist2 = checkpointlist1;
     for (int i = 0; i < ny; ++i)
     {
         for (int j = 0; j < nz; ++j)
         {
             for (int k = 0; k < nx; ++k)
             {
-                //if (voxel[i][j][k] == 1)
-                //    cout<<"("<<i<<", "<<j<<", "<<k<<")"<<endl;
-                output << voxel[i][j][k];
+                if (checkmode == true)
+                {
+                    checkdata >> check;
+                    if (check - voxel[i][j][k] > 0)
+                    {
+                        checkvox = {k, i, j};
+                        checkvoxlist1.push_back(checkvox);
+                        checkpointlist1[i][j] = pointList[i][j];
+                    }
+                    else if (voxel[i][j][k] - check > 0)
+                    {
+                        checkvox = {k, i, j};
+                        checkvoxlist2.push_back(checkvox);
+                        checkpointlist2[i][j] = pointList[i][j];
+                    }
+                }
+                OUTPUT << voxel[i][j][k];
             }
         }
     }
 
-    output.close();
+    if (checkmode == true)
+    {
+        cout << endl << "--------------------------Olddata - Newdata--------------------------" << endl;
+        for (auto cor : checkvoxlist1)
+        {
+            cout << "--------------------------" << endl;
+            cout << "Lost voxel: (" << cor[0] <<", "<< cor[1]<<", "<< cor[2] <<")"<< endl << endl;
+            for (auto checkpoint : checkpointlist1[cor[1]][cor[2]])
+            {
+                cout << checkpoint.value;
+                if (checkpoint.enter)
+                cout << " enter";
+                if (checkpoint.exit)
+                    cout << " exit";
+                if (checkpoint.touch1)
+                    cout << " touch1";
+                if (checkpoint.touch2)
+                    cout << " touch2";
+                cout << endl;
+
+                for (auto trinum : checkpoint.triNum)
+                {
+                    cout <<" v1("<< Vertex[Face[trinum].v1].x <<", "<< Vertex[Face[trinum].v1].y <<", "<< Vertex[Face[trinum].v1].z <<"),";
+                    cout <<" v2("<< Vertex[Face[trinum].v2].x <<", "<< Vertex[Face[trinum].v2].y <<", "<< Vertex[Face[trinum].v2].z <<"),";
+                    cout <<" v3("<< Vertex[Face[trinum].v3].x <<", "<< Vertex[Face[trinum].v3].y <<", "<< Vertex[Face[trinum].v3].z <<")"<<endl;
+                    cout << endl;
+                }
+            }
+        }
+        cout << endl << "--------------------------Newdata - Olddata--------------------------" << endl;
+        for (auto cor : checkvoxlist2)
+        {
+            cout << "--------------------------" << endl;
+            cout << "Extra voxel: (" << cor[0] <<", "<< cor[1]<<", "<< cor[2] <<")"<< endl << endl;
+            for (auto checkpoint : checkpointlist2[cor[1]][cor[2]])
+            {
+                cout << checkpoint.value;
+                if (checkpoint.enter)
+                cout << " enter";
+                if (checkpoint.exit)
+                    cout << " exit";
+                if (checkpoint.touch1)
+                    cout << " touch1";
+                if (checkpoint.touch2)
+                    cout << " touch2";
+                cout << endl;
+
+                for (auto trinum : checkpoint.triNum)
+                {
+                    cout <<" v1("<< Vertex[Face[trinum].v1].x <<", "<< Vertex[Face[trinum].v1].y <<", "<< Vertex[Face[trinum].v1].z <<"),";
+                    cout <<" v2("<< Vertex[Face[trinum].v2].x <<", "<< Vertex[Face[trinum].v2].y <<", "<< Vertex[Face[trinum].v2].z <<"),";
+                    cout <<" v3("<< Vertex[Face[trinum].v3].x <<", "<< Vertex[Face[trinum].v3].y <<", "<< Vertex[Face[trinum].v3].z <<")"<<endl;
+                    cout << endl;
+                }
+            }
+        }
+    }
+    
+    OUTPUT.close();
     DATA.close();
+    checkdata.close();
 	return 0;
 }
