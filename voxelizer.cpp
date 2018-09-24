@@ -585,12 +585,13 @@ int main(int argc, char **argv)
         for (auto cor : checkvoxlist1)
         {
             cout << "--------------------------" << endl;
-            cout << "Lost voxel: (" << cor[0] <<", "<< cor[1]<<", "<< cor[2] <<")"<< endl << endl;
+            cout << "Lost voxel: (" << cor[0] <<", "<< cor[1]<<", "<< cor[2] <<")";
+            cout << "	Fiji coordinate: (" << cor[0] <<", "<< cor[2]<<", "<< cor[1] <<")"<< endl << endl;
             for (auto checkpoint : checkpointlist1[cor[1]][cor[2]])
             {
-                cout << checkpoint.value;
+                cout << "x = " << checkpoint.value << "  condition:";
                 if (checkpoint.enter)
-                cout << " enter";
+                	cout << " enter";
                 if (checkpoint.exit)
                     cout << " exit";
                 if (checkpoint.touch1)
@@ -612,12 +613,13 @@ int main(int argc, char **argv)
         for (auto cor : checkvoxlist2)
         {
             cout << "--------------------------" << endl;
-            cout << "Extra voxel: (" << cor[0] <<", "<< cor[1]<<", "<< cor[2] <<")"<< endl << endl;
+            cout << "Extra voxel: (" << cor[0] <<", "<< cor[1]<<", "<< cor[2] <<")";
+            cout << "	Fiji coordinate: (" << cor[0] <<", "<< cor[2]<<", "<< cor[1] <<")"<< endl << endl;
             for (auto checkpoint : checkpointlist2[cor[1]][cor[2]])
             {
-                cout << checkpoint.value;
+                cout << "x = " << checkpoint.value << "  condition:";
                 if (checkpoint.enter)
-                cout << " enter";
+                	cout << " enter";
                 if (checkpoint.exit)
                     cout << " exit";
                 if (checkpoint.touch1)
