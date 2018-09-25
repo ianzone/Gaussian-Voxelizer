@@ -59,24 +59,26 @@ int intersectant(vect dir, vertex P, vertex A, vertex B, vertex C)
     return 0;
 }
 
-void insert(vector<intersection> &pl, intersection &point);
-void insert(vector<intersection> &pl, intersection &point)
+void insertPoint(vector<intersection> &pl, intersection &point, int count);
+void insertPoint(vector<intersection> &pl, intersection &point, int count)
 {
+	point.triNum.push_back(count);
 	if (pl.empty())
         pl.push_back(point);
     else for (auto pt = pl.begin(); pt != pl.end(); pt++)
     {
         if (point.value == (*pt).value)
         {
-            (*pt).enter = ((*pt).enter || point.enter);
-            (*pt).exit  = ((*pt).exit  || point.exit);
+            (*pt).enter  = ((*pt).enter  || point.enter);
+            (*pt).exit   = ((*pt).exit   || point.exit);
             (*pt).touch1 = ((*pt).touch1 || point.touch1);
             (*pt).touch2 = ((*pt).touch2 || point.touch2);
+            (*pt).triNum.push_back(count);
             break;
         }
         else if (point.value < (*pt).value)
         {
-            pl.insert(pt, point);
+            pl.insert(pt, point); // std::vector.insert()
             break;
         }
         if (pt == pl.end() - 1)
@@ -170,6 +172,7 @@ int main(int argc, char **argv)
         cerr<<"can not open input file!"<<endl;
         exit(1);
     }
+    auto dataHead = DATA.tellg();
 
     ofstream OUTPUT(output);
     if(!OUTPUT)
@@ -177,13 +180,21 @@ int main(int argc, char **argv)
         cerr<<"can not open output file!"<<endl;
         exit(2);
     }
-    
-    ifstream checkdata(checkfile);
-    if(!checkdata)
+
+    ifstream checkData(checkfile);
+    if(!checkData)
     {
         cerr<<"can not open check file!"<<endl;
         exit(4);
     }
+
+    ofstream checkMesh("checkMesh.off");
+    if (!checkMesh)
+    {
+    	cerr<<"can not create check file!"<<endl;
+        exit(5);
+    }
+
     /* reading inputs */
 
     /* skip first two lines */
@@ -191,24 +202,24 @@ int main(int argc, char **argv)
     getline(DATA,S);
     getline(DATA,S);
 
-    int vertexNum;
+    int vertexAmt;
     DATA >> S;
     cout << "vertex:" << S;
-    vertexNum = stoi(S);
+    vertexAmt = stoi(S);
 
     int faceAmt;
     DATA >> S;
     cout << "  face:" << S;
     faceAmt = stoi(S);
 
-    int edgeNum;
+    int edgeAmt;
     DATA >> S;
     cout << "  edge:" << S << endl;
-    edgeNum = stoi(S);
+    edgeAmt = stoi(S);
     /* skip first two lines */
 
     /* shift mesh space, store cooridinates as rational number and check user input*/
-    vector<vertex> Vertex(vertexNum);
+    vector<vertex> Vertex(vertexAmt);
 
     DATA >> S;
     auto len = S.size();
@@ -231,7 +242,7 @@ int main(int argc, char **argv)
     Vertex[0].z = z - szmin;
     auto zmin = z, zmax = z;
 
-    for (int i = 1; i < vertexNum; i++)
+    for (int i = 1; i < vertexAmt; i++)
     {
         DATA >> S;
         len = S.size();
@@ -375,17 +386,15 @@ int main(int argc, char **argv)
                     {
 			            if (dotproduct < 0)
 			            {
-			                point.enter = true;
-                        	point.triNum.push_back(count);
+			                point.enter = true;                        	
                         	point.value = (d - normal.y*P.y - normal.z*P.z)/normal.x;
-                        	insert(pointList[i][j], point);
+                        	insertPoint(pointList[i][j], point, count);
 			            }
 			            else if (dotproduct > 0)
 			            {
-			                point.exit = true;
-                        	point.triNum.push_back(count);
+			                point.exit = true;                        	
 	                        point.value = (d - normal.y*P.y - normal.z*P.z)/normal.x;
-	                        insert(pointList[i][j], point);
+	                        insertPoint(pointList[i][j], point, count);
 			            } 
 			            else 
 			            {
@@ -422,32 +431,29 @@ int main(int argc, char **argv)
                             }
 
                             if (value1 < value2)
-                            {
-                        		point.triNum.push_back(count);
+                            {                       		
                             	point.value = value1;
                             	point.touch1 = true;
-                            	insert(pointList[i][j], point);
+                            	insertPoint(pointList[i][j], point, count);
                             	point.value = value2;
                             	point.touch1 = false;
                             	point.touch2 = true;
-                            	insert(pointList[i][j], point);
+                            	insertPoint(pointList[i][j], point, count);
                             } 
                             else if (value1 > value2)
-                            {
-                        		point.triNum.push_back(count);
+                            {                       		
                             	point.value = value2;
                             	point.touch1 = true;
-                            	insert(pointList[i][j], point);
+                            	insertPoint(pointList[i][j], point, count);
                             	point.value = value1;
                             	point.touch1 = false;
                             	point.touch2 = true;
-                            	insert(pointList[i][j], point);
-                            } else {
-                            	point.triNum.push_back(count);
+                            	insertPoint(pointList[i][j], point, count);
+                            } else {                           	
                             	point.value = value1;
                             	point.touch1 = true;
                             	point.touch2 = true;
-                            	insert(pointList[i][j], point);
+                            	insertPoint(pointList[i][j], point, count);
                             }
                         }
                     }
@@ -560,7 +566,7 @@ int main(int argc, char **argv)
             {
                 if (checkmode == true)
                 {
-                    checkdata >> check;
+                    checkData >> check;
                     if (check - voxel[i][j][k] > 0)
                     {
                         checkvox = {k, i, j};
@@ -581,9 +587,14 @@ int main(int argc, char **argv)
 
     if (checkmode == true)
     {
+        vector<vector<int>> checkRay(ny);
+        for (int i = 0; i < ny; ++i)
+        	checkRay[i].resize(nz);
+
         cout << endl << "--------------------------Olddata - Newdata--------------------------" << endl;
         for (auto cor : checkvoxlist1)
         {
+        	checkRay[cor[1]][cor[2]] = 1;
             cout << "--------------------------" << endl;
             cout << "Lost voxel: (" << cor[0] <<", "<< cor[1]<<", "<< cor[2] <<")";
             cout << "	Fiji coordinate: (" << cor[0] <<", "<< cor[2]<<", "<< cor[1] <<")"<< endl << endl;
@@ -612,6 +623,7 @@ int main(int argc, char **argv)
         cout << endl << "--------------------------Newdata - Olddata--------------------------" << endl;
         for (auto cor : checkvoxlist2)
         {
+        	checkRay[cor[1]][cor[2]] = 1;
             cout << "--------------------------" << endl;
             cout << "Extra voxel: (" << cor[0] <<", "<< cor[1]<<", "<< cor[2] <<")";
             cout << "	Fiji coordinate: (" << cor[0] <<", "<< cor[2]<<", "<< cor[1] <<")"<< endl << endl;
@@ -637,10 +649,60 @@ int main(int argc, char **argv)
                 }
             }
         }
+
+        int checkRayAmt = 0;
+        for (int i = 0; i < ny; ++i)
+        {
+        	for (int j = 0; j < nz; ++j)
+        	{
+        		checkRayAmt += checkRay[i][j];
+        	}
+        }
+
+        DATA.seekg(dataHead);
+        getline(DATA,S);
+        checkMesh << S << endl;
+        getline(DATA,S);
+        checkMesh << S << endl;
+        getline(DATA,S);
+        checkMesh << vertexAmt + checkRayAmt*4 <<' '<< faceAmt + checkRayAmt <<' '<< edgeAmt + checkRayAmt*4 << endl;
+
+        for (int i = 0; i < vertexAmt; ++i)
+        {
+        	getline(DATA,S);
+        	checkMesh << S << endl;
+        }
+
+        for (int i = 0; i < ny; ++i)
+        {
+        	for (int j = 0; j < nz; ++j)
+        	{
+        		if (checkRay[i][j] == 1)
+        		{
+        			checkMesh << '0'<<' '<< i <<' '<< j << endl;
+        			checkMesh << nx <<' '<< i <<' '<< j << endl;
+        			checkMesh << nx <<' '<< i <<' '<< j - 0.01 << endl;
+        			checkMesh << '0'<<' '<< i <<' '<< j - 0.01 << endl;
+        		}
+        	}
+        }
+
+        for (int i = 0; i < faceAmt; ++i)
+        {
+        	getline(DATA,S);
+        	checkMesh << S << endl;
+        }
+
+        for (int i = 0; i < checkRayAmt; ++i)
+        {
+        	checkMesh <<"4 "<< vertexAmt + i*4 <<' '<< vertexAmt + 1 + i*4 <<' '<< vertexAmt + 2 + i*4 <<' '<< vertexAmt + 3 + i*4 << endl;
+        }
+        
     }
     
     OUTPUT.close();
     DATA.close();
-    checkdata.close();
+    checkData.close();
+    checkMesh.close();
 	return 0;
 }
