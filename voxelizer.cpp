@@ -153,7 +153,7 @@ int main(int argc, char **argv)
                 if (!(nx > 0 && ny > 0 && nz > 0))
                 {
                     cerr<<"invalid voxel number"<<endl;
-                    exit(3);
+                    exit(0);
                 }
             }
             else if (!strcmp(*argv, "-check"))
@@ -170,7 +170,7 @@ int main(int argc, char **argv)
     if(!DATA)
     {
         cerr<<"can not open input file!"<<endl;
-        exit(1);
+        exit(0);
     }
     auto dataHead = DATA.tellg();
 
@@ -178,23 +178,36 @@ int main(int argc, char **argv)
     if(!OUTPUT)
     {
         cerr<<"can not open output file!"<<endl;
-        exit(2);
+        exit(0);
     }
 
-    ifstream checkData(checkfile);
-    if(!checkData)
+    ifstream checkData;
+    ofstream checkMesh;
+    ofstream lostVoxel26Connected;
+    if (checkmode == true)
     {
-        cerr<<"can not open check file!"<<endl;
-        exit(4);
-    }
+    	checkMesh.open("checkMesh.off");
+	    if (!checkMesh.is_open())
+	    {
+	    	cerr<<"can not create checkMesh.off!"<<endl;
+	        exit(0);
+	    }
 
-    ofstream checkMesh("checkMesh.off");
-    if (!checkMesh)
-    {
-    	cerr<<"can not create check file!"<<endl;
-        exit(5);
-    }
+	    checkData.open(checkfile);
+		if(!checkData.is_open())
+	    {
+	        cerr<<"can not open check file!"<<endl;
+	        exit(0);
+	    }
 
+	    lostVoxel26Connected.open("lostVoxel26Connected.raw");
+	    if (!lostVoxel26Connected.is_open())
+	    {
+	    	cerr<<"can not create lostVoxel26Connected.raw!"<<endl;
+	        exit(0);
+	    }
+    }
+ 
     /* reading inputs */
 
     /* skip first two lines */
@@ -553,11 +566,11 @@ int main(int argc, char **argv)
 
     unsigned char check;
     vector<int> checkvox = {-1, -1, -1};
-    vector<vector<int>> checkvoxlist1, checkvoxlist2;
-    vector<vector<vector<intersection>>> checkpointlist1(ny);
+    vector<vector<int>> lostVoxelList, extraVoxelList;
+    vector<vector<vector<intersection>>> lostPointList(ny);
     for (int i = 0; i < ny; ++i)
-        checkpointlist1[i].resize(nz);
-    auto checkpointlist2 = checkpointlist1;
+        lostPointList[i].resize(nz);
+    auto extraPointList = lostPointList;
     for (int i = 0; i < ny; ++i)
     {
         for (int j = 0; j < nz; ++j)
@@ -570,20 +583,27 @@ int main(int argc, char **argv)
                     if (check - voxel[i][j][k] > 0)
                     {
                         checkvox = {k, i, j};
-                        checkvoxlist1.push_back(checkvox);
-                        checkpointlist1[i][j] = pointList[i][j];
+                        lostVoxelList.push_back(checkvox);
+                        lostPointList[i][j] = pointList[i][j];
+                        //lostVoxel26Connected << voxel[i][j][k];
                     }
                     else if (voxel[i][j][k] - check > 0)
                     {
                         checkvox = {k, i, j};
-                        checkvoxlist2.push_back(checkvox);
-                        checkpointlist2[i][j] = pointList[i][j];
+                        extraVoxelList.push_back(checkvox);
+                        extraPointList[i][j] = pointList[i][j];
                     }
                 }
-                OUTPUT << voxel[i][j][k];
+                //OUTPUT << voxel[i][j][k];
             }
         }
     }
+
+	
+    for (int j = 0; j < nz; ++j)
+        for (int i = 0; i < ny; ++i)
+            for (int k = 0; k < nx; ++k)
+            	OUTPUT << voxel[i][j][k];
 
     if (checkmode == true)
     {
@@ -592,13 +612,13 @@ int main(int argc, char **argv)
         	checkRay[i].resize(nz);
 
         cout << endl << "--------------------------Olddata - Newdata--------------------------" << endl;
-        for (auto cor : checkvoxlist1)
+        for (auto cor : lostVoxelList)
         {
         	checkRay[cor[1]][cor[2]] = 1;
             cout << "--------------------------" << endl;
             cout << "Lost voxel: (" << cor[0] <<", "<< cor[1]<<", "<< cor[2] <<")";
             cout << "	Fiji coordinate: (" << cor[0] <<", "<< cor[2]<<", "<< cor[1] <<")"<< endl << endl;
-            for (auto checkpoint : checkpointlist1[cor[1]][cor[2]])
+            for (auto checkpoint : lostPointList[cor[1]][cor[2]])
             {
                 cout << "x = " << checkpoint.value << "  condition:";
                 if (checkpoint.enter)
@@ -621,13 +641,13 @@ int main(int argc, char **argv)
             }
         }
         cout << endl << "--------------------------Newdata - Olddata--------------------------" << endl;
-        for (auto cor : checkvoxlist2)
+        for (auto cor : extraVoxelList)
         {
         	checkRay[cor[1]][cor[2]] = 1;
             cout << "--------------------------" << endl;
             cout << "Extra voxel: (" << cor[0] <<", "<< cor[1]<<", "<< cor[2] <<")";
             cout << "	Fiji coordinate: (" << cor[0] <<", "<< cor[2]<<", "<< cor[1] <<")"<< endl << endl;
-            for (auto checkpoint : checkpointlist2[cor[1]][cor[2]])
+            for (auto checkpoint : extraPointList[cor[1]][cor[2]])
             {
                 cout << "x = " << checkpoint.value << "  condition:";
                 if (checkpoint.enter)
@@ -700,9 +720,5 @@ int main(int argc, char **argv)
         
     }
     
-    OUTPUT.close();
-    DATA.close();
-    checkData.close();
-    checkMesh.close();
 	return 0;
 }
