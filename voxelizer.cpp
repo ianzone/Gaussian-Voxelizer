@@ -9,58 +9,57 @@
 using namespace std;
 using namespace boost;
 
-typedef struct vertex
+typedef struct Vertex
 {
     rational<int> x, y, z;
-}vect, vox;
+}Vector, Voxel, Space;		// vector, voxel
 
-struct face
+struct Face
 {
     unsigned v1, v2, v3;
 };
 
-struct intersection 
+struct Intersection 
 {
-    rational<int> value;    // coordinate of ray-mesh interSection point
-    bool enter = false;     // ray is entering meSh
-    bool exit  = false;     // ray is exiting mesh
-    bool touch1 = false;    // touch means the ray is on the surface
-    bool touch2 = false;    
-    vector<int> triNum;
+    rational<int> value;    	// coordinate of ray-mesh interSection point
+    bool enter 		= false;    // ray is entering meSh
+    bool exit  		= false;    // ray is exiting mesh
+    bool touchStart = false;    // touch means the ray is on the surface
+    bool touchEnd 	= false;
+    vector<int> triNum;			// related triangle number
 };
 
-void cross_product(vect &p, vect a, vect b);
-void cross_product(vect &p, vect a, vect b)
+rational<int> dot_product(Vector a, Vector b);
+rational<int> dot_product(Vector a, Vector b)
+{
+	return a.x*b.x + a.y*b.y + a.z*b.z;
+}
+
+void cross_product(Vector &p, Vector a, Vector b);
+void cross_product(Vector &p, Vector a, Vector b)
 {
     p.x = a.y*b.z - a.z*b.y;
     p.y = a.z*b.x - a.x*b.z;
     p.z = a.x*b.y - a.y*b.x;
 }
 
-int intersectant(vect dir, vertex P, vertex A, vertex B, vertex C);
-int intersectant(vect dir, vertex P, vertex A, vertex B, vertex C)
+int intersectant(Vector ray, Vertex P, Vertex A, Vertex B, Vertex C);
+int intersectant(Vector ray, Vertex P, Vertex A, Vertex B, Vertex C)
 {
-    vect PA = {A.x-P.x, A.y-P.y, A.z-P.z};
-    vect PB = {B.x-P.x, B.y-P.y, B.z-P.z};
-    vect PC = {C.x-P.x, C.y-P.y, C.z-P.z};
-    vect papb, pbpc, pcpa;
+    Vector PA = {A.x-P.x, A.y-P.y, A.z-P.z};
+    Vector PB = {B.x-P.x, B.y-P.y, B.z-P.z};
+    Vector PC = {C.x-P.x, C.y-P.y, C.z-P.z};
+    Vector papb, pbpc, pcpa;
     cross_product(papb, PA, PB);
     cross_product(pbpc, PB, PC);
     cross_product(pcpa, PC, PA);
-    if (dir.x == 1)
-        if (papb.x <= 0 && pbpc.x <= 0 && pcpa.x <= 0 || papb.x >= 0 && pbpc.x >= 0 && pcpa.x >= 0)
-            return 1;
-    else if (dir.y == 1)
-        if (papb.y <= 0 && pbpc.y <= 0 && pcpa.y <= 0 || papb.y >= 0 && pbpc.y >= 0 && pcpa.y >= 0)
-            return 1;
-    else if (dir.z == 1)
-        if (papb.z <= 0 && pbpc.z <= 0 && pcpa.z <= 0 || papb.z >= 0 && pbpc.z >= 0 && pcpa.z >= 0)
-            return 1;
+    if (papb.z <= 0 && pbpc.z <= 0 && pcpa.z <= 0 || papb.z >= 0 && pbpc.z >= 0 && pcpa.z >= 0)
+        return 1;
     return 0;
 }
 
-void insertPoint(vector<intersection> &pl, intersection &point, int count);
-void insertPoint(vector<intersection> &pl, intersection &point, int count)
+void insert_point(vector<Intersection> &pl, Intersection &point, int count);
+void insert_point(vector<Intersection> &pl, Intersection &point, int count)
 {
 	point.triNum.push_back(count);
 	if (pl.empty())
@@ -69,16 +68,16 @@ void insertPoint(vector<intersection> &pl, intersection &point, int count)
     {
         if (point.value == (*pt).value)
         {
-            (*pt).enter  = ((*pt).enter  || point.enter);
-            (*pt).exit   = ((*pt).exit   || point.exit);
-            (*pt).touch1 = ((*pt).touch1 || point.touch1);
-            (*pt).touch2 = ((*pt).touch2 || point.touch2);
+            (*pt).enter 	 = ((*pt).enter  	 || point.enter);
+            (*pt).exit 		 = ((*pt).exit   	 || point.exit);
+            (*pt).touchStart = ((*pt).touchStart || point.touchStart);
+            (*pt).touchEnd	 = ((*pt).touchEnd 	 || point.touchEnd);
             (*pt).triNum.push_back(count);
             break;
         }
         else if (point.value < (*pt).value)
         {
-            pl.insert(pt, point); // std::vector.insert()
+            pl.insert(pt, point);
             break;
         }
         if (pt == pl.end() - 1)
@@ -89,16 +88,91 @@ void insertPoint(vector<intersection> &pl, intersection &point, int count)
     }
 }
 
+struct Intersection2D
+{
+	rational<int> x, y;
+	struct coorxy
+	{
+		rational<int> x, y;
+	} predecessor, successor;
+};
+
+void insert_point2D(unsigned &parityCount, vector<Intersection2D> &pl, Intersection2D point2D);
+void insert_point2D(unsigned &parityCount, vector<Intersection2D> &pl, Intersection2D point2D)
+{
+	if (pl.empty())
+        pl.push_back(point2D);
+    else for (auto pt = pl.begin(); pt != pl.end(); pt++)
+    {
+        if (point2D.y == (*pt).y && (point2D.successor.x - point2D.predecessor.x) * ((*pt).successor.x - (*pt).predecessor.x) > 0)
+        {
+            parityCount++;
+            auto k = ((*pt).successor.y - (*pt).predecessor.y)/((*pt).successor.x - (*pt).predecessor.x);
+            if (point2D.x == point2D.predecessor.x)
+            {
+            	if (point2D.successor.y > k * point2D.successor.x)
+	            {
+	            	(*pt).predecessor.x = point2D.predecessor.x;
+	            	(*pt).successor.x = point2D.successor.x;
+	            }
+            }else{
+            	if (point2D.predecessor.y > k * point2D.predecessor.x)
+	            {
+	            	(*pt).predecessor.x = point2D.predecessor.x;
+	            	(*pt).successor.x = point2D.successor.x;
+	            }
+            }
+            return;
+        }
+        else if (point2D.y > (*pt).y)
+        {
+            pl.insert(pt, point2D);
+            return;
+        }
+        if (pt == pl.end() - 1)
+        {
+            pl.push_back(point2D);
+            return;
+        }
+    }
+}
+
+void parity_count(unsigned &parityCount, vector<Intersection2D> &pl, Vertex point, Vertex edgeHead, Vertex edgeTail);
+void parity_count(unsigned &parityCount, vector<Intersection2D> &pl, Vertex point, Vertex edgeHead, Vertex edgeTail)
+{
+	if (edgeHead.x <= point.x && point.x <= edgeTail.x || edgeTail.x <= point.x && point.x <= edgeHead.x)
+	{
+		if (edgeHead.x = edgeTail.x)
+		{
+			return;
+		} 
+		else if (point.y > (edgeTail.y - edgeHead.y)/(edgeTail.x - edgeHead.x) * point.x)
+		{
+			Intersection2D pt;
+			pt.x = point.x;
+			pt.y = (edgeTail.y - edgeHead.y)/(edgeTail.x - edgeHead.x) * point.x;
+			pt.predecessor.x = edgeHead.x;
+			pt.predecessor.y = edgeHead.y;
+			pt.successor.x   = edgeTail.x;
+			pt.successor.y   = edgeTail.y;
+			parityCount++;
+			insert_point2D(parityCount, pl, pt);
+		}
+	}
+}
+
 int main(int argc, char **argv)
 {
-    /* reading inputs */
+    /*-----------------------------------------------------------------reading inputs-----------------------------------------------------------------*/
     argv++; argc--;
     string input, output, checkfile;
-    vect dir = {1, 0, 0};
-    int nx = 128, ny = 128, nz = 128;
-    int sxmin = 0, symin = 0, szmin = 0;
-    int sxmax = 255, symax = 255, szmax = 255;
+    Vector ray = {0, 0, 1};
+    Space spacemin, spacemax;
+    spacemin.x = 0, spacemin.y = 0, spacemin.z = 0;
+    spacemax.x = 255, spacemax.y = 255, spacemax.z = 255;
+    int nx = 255, ny = 255, nz = 255;
     bool checkmode = false;
+
     while (argc > 0)
     {
         if ((*argv)[0] == '-')
@@ -113,34 +187,33 @@ int main(int argc, char **argv)
                 argv++; argc--;
                 output = *argv;
             }
-            else if (!strcmp(*argv, "-d"))
-            {
-                argv++; argc--;
-                if (!strcmp(*argv, "x")) {}
-                else if (!strcmp(*argv, "y"))
-                    dir = {0, 1, 0};
-                else if (!strcmp(*argv, "z"))
-                    dir = {0, 0, 1};
-                else 
-                    cerr << "unknown direction" << endl;
-            }
             else if (!strcmp(*argv, "-smin"))
             {
                 argv++; argc--;
-                sxmin = stoi(*argv);
+                spacemin.x = stod(*argv);
                 argv++; argc--;
-                symin = stoi(*argv);
+                spacemin.y = stod(*argv);
                 argv++; argc--;
-                szmin = stoi(*argv);
+                spacemin.z = stod(*argv);
+                if (spacemin.x * spacemin.y * spacemin.z < 0)
+                {
+                	cerr<<"please give non-negtive value for space smin\n";
+                	exit(0);
+                }
             }
             else if (!strcmp(*argv, "-smax"))
             {
                 argv++; argc--;
-                sxmax = stoi(*argv);
+                spacemax.x = stod(*argv);
                 argv++; argc--;
-                symax = stoi(*argv);
+                spacemax.y = stod(*argv);
                 argv++; argc--;
-                szmax = stoi(*argv);
+                spacemax.z = stod(*argv);
+                if (spacemax.x * spacemax.y * spacemax.z < 0)
+                {
+                	cerr<<"please give non-negtive value for space smin\n";
+                	exit(0);
+                }
             }
             else if (!strcmp(*argv, "-n"))
             {
@@ -152,7 +225,7 @@ int main(int argc, char **argv)
                 nz = stoi(*argv);
                 if (!(nx > 0 && ny > 0 && nz > 0))
                 {
-                    cerr<<"invalid voxel number"<<endl;
+                    cerr<<"invalid voxel number\n";
                     exit(0);
                 }
             }
@@ -169,7 +242,7 @@ int main(int argc, char **argv)
     ifstream DATA(input);
     if(!DATA)
     {
-        cerr<<"can not open input file!"<<endl;
+        cerr<<"can not open input file!\n";
         exit(0);
     }
     auto dataHead = DATA.tellg();
@@ -177,376 +250,372 @@ int main(int argc, char **argv)
     ofstream OUTPUT(output);
     if(!OUTPUT)
     {
-        cerr<<"can not open output file!"<<endl;
+        cerr<<"can not open output file!\n";
         exit(0);
     }
 
     ifstream checkData;
     ofstream checkMesh;
-    ofstream lostVoxel26Connected;
+    ofstream lostVoxel_26connected;
     if (checkmode == true)
     {
     	checkMesh.open("checkMesh.off");
 	    if (!checkMesh.is_open())
 	    {
-	    	cerr<<"can not create checkMesh.off!"<<endl;
+	    	cerr<<"can not create checkMesh.off!\n";
 	        exit(0);
 	    }
 
 	    checkData.open(checkfile);
 		if(!checkData.is_open())
 	    {
-	        cerr<<"can not open check file!"<<endl;
+	        cerr<<"can not open check file!\n";
 	        exit(0);
 	    }
 
-	    lostVoxel26Connected.open("lostVoxel26Connected.raw");
-	    if (!lostVoxel26Connected.is_open())
+	    lostVoxel_26connected.open("lostVoxel_26connected.raw");
+	    if (!lostVoxel_26connected.is_open())
 	    {
-	    	cerr<<"can not create lostVoxel26Connected.raw!"<<endl;
+	    	cerr<<"can not create lostVoxel_26connected.raw!\n";
 	        exit(0);
 	    }
     }
- 
-    /* reading inputs */
+    /*-----------------------------------------------------------------reading inputs-----------------------------------------------------------------*/
 
-    /* skip first two lines */
+    /*-------------------------------------------------------------------mesh info--------------------------------------------------------------------*/
     string S;
     getline(DATA,S);
     getline(DATA,S);
 
     int vertexAmt;
     DATA >> S;
-    cout << "vertex:" << S;
+    cout << "Vertex:" << S;
     vertexAmt = stoi(S);
 
     int faceAmt;
     DATA >> S;
-    cout << "  face:" << S;
+    cout << "  Face:" << S;
     faceAmt = stoi(S);
 
     int edgeAmt;
     DATA >> S;
     cout << "  edge:" << S << endl;
     edgeAmt = stoi(S);
-    /* skip first two lines */
+    /*-------------------------------------------------------------------mesh info--------------------------------------------------------------------*/
 
-    /* shift mesh space, store cooridinates as rational number and check user input*/
-    vector<vertex> Vertex(vertexAmt);
-
-    DATA >> S;
-    auto len = S.size();
-    double s = stod(S);
-    rational<int> x(s*pow(10, len), pow(10, len));
-    Vertex[0].x = x - sxmin;
-    auto xmin = x, xmax = x;
-
-    DATA >> S;
-    len = S.size();
-    s = stod(S);
-    rational<int> y(s*pow(10, len), pow(10, len));
-    Vertex[0].y = y - symin;
-    auto ymin = y, ymax = y;
-
-    DATA >> S;
-    len = S.size();
-    s = stod(S);
-    rational<int> z(s*pow(10, len), pow(10, len));
-    Vertex[0].z = z - szmin;
-    auto zmin = z, zmax = z;
-
-    for (int i = 1; i < vertexAmt; i++)
+    /*---------------------------check user input, shift mesh Space, store cooridinates as rational number and store faces----------------------------*/
+    int len;
+    double s;
+    vector<Vertex> vertexData(vertexAmt);
+    for (int i = 0; i < vertexAmt; i++)
     {
         DATA >> S;
         len = S.size();
         s = stod(S);
         rational<int> x(s*pow(10, len), pow(10, len));
-        Vertex[i].x = x - sxmin;
-        if (x < xmin)
-            xmin = x;
-        else if (x > xmax)
-            xmax = x;
+	    if (x - spacemin.x < 0)
+	    {
+	    	cerr << "please give a smaller x of Space size\n";
+	    	exit(0);
+	    }
+	    else if (spacemax.x - x < 0)
+	    {
+	    	cerr << "please give a larger x of Space size\n";
+	    	exit(0);
+	    }
+        vertexData[i].x = x - spacemin.x;
 
         DATA >> S;
         len = S.size();
         s = stod(S);
         rational<int> y(s*pow(10, len), pow(10, len));
-        Vertex[i].y = y - symin;
-        if (y < ymin)
-            ymin = y;
-        else if (y > ymax)
-            ymax = y;
+        if (y - spacemin.y < 0)
+	    {
+	    	cerr << "please give a smaller y of Space size\n";
+	    	exit(0);
+	    }
+	    else if (spacemax.y - y < 0)
+	    {
+	    	cerr << "please give a larger y of Space size\n";
+	    	exit(0);
+	    }
+        vertexData[i].y = y - spacemin.y;
 
         DATA >> S;
         len = S.size();
         s = stod(S);
         rational<int> z(s*pow(10, len), pow(10, len));
-        Vertex[i].z = z - szmin;
-        if (z < zmin)
-            zmin = z;
-        else if (z > zmax)
-            zmax = z;
+        if (z - spacemin.z < 0)
+	    {
+	    	cerr << "please give a smaller z of Space size\n";
+	    	exit(0);
+	    }
+	    else if (spacemax.z - z < 0)
+	    {
+	    	cerr << "please give a larger z of Space size\n";
+	    	exit(0);
+	    }
+        vertexData[i].z = z - spacemin.z;
     }
-    //cout << "bounding box: " << xmin <<" "<< ymin <<" "<< zmin <<" | "<< xmax <<" "<< ymax <<" "<< zmax << endl;//空间大小不得小于该数值
-    /* shift mesh space, store cooridinates as rational number and check user input*/
 
-    vox voxelsize;
-    voxelsize.x = rational<int>(sxmax - sxmin, nx);
-    voxelsize.y = rational<int>(symax - symin, ny);
-    voxelsize.z = rational<int>(szmax - szmin, nz);
-    cout << "mesh space min: " << sxmin <<" "<< symin <<" "<< szmin <<" | max: "<< sxmax <<" "<< symax <<" "<< szmax << endl;
-    cout << "voxel size: " << voxelsize.x <<" "<< voxelsize.y <<" "<< voxelsize.z << endl;
-
-    if (dir.x == 1)
-        cout << "ray direction: x" << endl;
-    else if (dir.y == 1)
-        cout << "ray direction: y" << endl;
-    else if (dir.z == 1)
-        cout << "ray direction: z" << endl;
-
-    /* store faces into vector */
-    vector<face> Face(faceAmt);
+    vector<Face> faceData(faceAmt);
     for (int i = 0; i < faceAmt; ++i)
     {
         DATA >> S;
         DATA >> S;
         unsigned s = stoi(S);
-        Face[i].v1 = s;
+        faceData[i].v1 = s;
         DATA >> S;
         s = stoi(S);
-        Face[i].v2 = s;
+        faceData[i].v2 = s;
         DATA >> S;
         s = stoi(S);
-        Face[i].v3 = s;
+        faceData[i].v3 = s;
     }
-    /* store faces into vector */
+
+    Voxel voxelSize;
+    voxelSize.x = (spacemax.x - spacemin.x) / nx;
+    voxelSize.y = (spacemax.y - spacemin.y) / ny;
+    voxelSize.z = (spacemax.z - spacemin.z) / nz;
+    cout << "mesh Space min: " << spacemin.x <<" "<< spacemin.y <<" "<< spacemin.z <<" | max: "<< spacemax.x <<" "<< spacemax.y <<" "<< spacemax.z << endl;
+    cout << "voxel size: " << voxelSize.x <<" "<< voxelSize.y <<" "<< voxelSize.z << endl;
+    /*---------------------------check user input, shift mesh Space, store cooridinates as rational number and store faces----------------------------*/
 
 
-    vector<vect> normalList(faceAmt);
-    vector<vector<vector<intersection>>> pointList(ny);
-    for (int i = 0; i < ny; ++i)
-        pointList[i].resize(nz);
+    /*--------------------------------------------------------------triangle processing---------------------------------------------------------------*/
+    vector<Vector> normalData(faceAmt);
+    vector<vector<vector<Intersection>>> pointList(nx);
+    for (int i = 0; i < nx; ++i)
+        pointList[i].resize(ny);
 
 	int count = 0;
-    for (auto f : Face) // for each triangle
+    for (auto f : faceData) // for each triangle
     {
-        auto x1 = Vertex[f.v1].x, y1 = Vertex[f.v1].y, z1 = Vertex[f.v1].z;
-        auto x2 = Vertex[f.v2].x, y2 = Vertex[f.v2].y, z2 = Vertex[f.v2].z;
-        auto x3 = Vertex[f.v3].x, y3 = Vertex[f.v3].y, z3 = Vertex[f.v3].z;
-        vect vector1, vector2, normal;
+        auto x1 = vertexData[f.v1].x, y1 = vertexData[f.v1].y, z1 = vertexData[f.v1].z;
+        auto x2 = vertexData[f.v2].x, y2 = vertexData[f.v2].y, z2 = vertexData[f.v2].z;
+        auto x3 = vertexData[f.v3].x, y3 = vertexData[f.v3].y, z3 = vertexData[f.v3].z;
+        Vector vector1, vector2, normal;
         vector1.x = x2 - x1;
         vector1.y = y2 - y1;
         vector1.z = z2 - z1;
         vector2.x = x3 - x2;
         vector2.y = y3 - y2;
         vector2.z = z3 - z2;
-
         cross_product(normal, vector1, vector2);
-        normalList.push_back(normal);
+        normalData.push_back(normal);
         auto d = normal.x*x1 + normal.y*y1 + normal.z*z1;
         //cout << endl << count++ << " triangle formula: " << normal.x <<"x + "<< normal.y <<"y + "<< normal.z <<"z = "<< d << endl;
 
-        auto dotproduct = normal.x*dir.x + normal.y*dir.y + normal.z*dir.z;
+        auto dotproduct = dot_product(normal, ray);
         //cout << "dot production: " << dotproduct <<" "<<x1<<" "<<y1<<" "<<z1<<" | "<<x2<<" "<<y2<<" "<<z2<<" | "<<x3<<" "<<y3<<" "<<z3<< endl;
 
-        /* triangle bounding box */
-        vertex triboundmin, triboundmax;
+        // find triangle bounding box 
+        Vertex triboundmin, triboundmax;
         triboundmin.x = x1; triboundmax.x = x1;
         triboundmin.y = y1; triboundmax.y = y1;
-        triboundmin.z = z1; triboundmax.z = z1;
-        if (dir.x == 1)
+        if (x2 < triboundmin.x)
+            triboundmin.x = x2;
+        else if (x2 > triboundmax.x)
+            triboundmax.x = x2;
+        if (x3 < triboundmin.x)
+            triboundmin.x = x3;
+        else if (x3 > triboundmax.x)
+            triboundmax.x = x3;
+        if (y2 < triboundmin.y)
+            triboundmin.y = y2;
+        else if (y2 > triboundmax.y)
+            triboundmax.y = y2;
+        if (y3 < triboundmin.y)
+            triboundmin.y = y3;
+        else if (y3 > triboundmax.y)
+            triboundmax.y = y3;
+
+        // minimum coordinate of triangle's related voxel
+        unsigned numx = rational_cast<unsigned>(triboundmin.x / voxelSize.x);
+        unsigned numy = rational_cast<unsigned>(triboundmin.y / voxelSize.y);
+        auto trivoxelxmin = numx * voxelSize.x;
+        auto trivoxelymin = numy * voxelSize.y;
+
+        Intersection point;
+
+        unsigned i = numx;
+        for (auto x = trivoxelxmin; x <= triboundmax.x; x+=voxelSize.x, i++)
         {
-            // find triangle bounding box minimum and maximun coordinate
-            if (y2 < triboundmin.y)
-                triboundmin.y = y2;
-            else if (y2 > triboundmax.y)
-                triboundmax.y = y2;
-            if (y3 < triboundmin.y)
-                triboundmin.y = y3;
-            else if (y3 > triboundmax.y)
-                triboundmax.y = y3;
-            if (z2 < triboundmin.z)
-                triboundmin.z = z2;
-            else if (z2 > triboundmax.z)
-                triboundmax.z = z2;
-            if (z3 < triboundmin.z)
-                triboundmin.z = z3;
-            else if (z3 > triboundmax.z)
-                triboundmax.z = z3;
-            /*cout << "triboundmin(y, z): " << triboundmin.y << " " << triboundmin.z << " | ";
-            cout << "triboundmax(y, z): " << triboundmax.y << " " << triboundmax.z << endl;*/
-
-            // minimum coordinate of triangle's related voxel
-            unsigned numy = rational_cast<unsigned>(triboundmin.y / voxelsize.y);
-            unsigned numz = rational_cast<unsigned>(triboundmin.z / voxelsize.z);
-            auto trivoxelymin = numy * voxelsize.y;
-            auto trivoxelzmin = numz * voxelsize.z;
-            //cout << "voxelmin(y, z): " << trivoxelymin <<" "<< trivoxelzmin << endl;
-
-            intersection point;
-
-            unsigned i = numy;
-            for (auto y = trivoxelymin; y <= triboundmax.y; y+=voxelsize.y, i++)
+            unsigned j = numy;
+            for (auto y = trivoxelymin; y <= triboundmax.y; y+=voxelSize.y, j++)
             {
-                unsigned j = numz;
-                for (auto z = trivoxelzmin; z <= triboundmax.z; z+=voxelsize.z, j++)
+                Vertex P = {x, y, 0};
+                Vertex A = {x1, y1, 0};
+                Vertex B = {x2, y2, 0};
+                Vertex C = {x3, y3, 0};
+                if (intersectant(ray, P, A, B, C))
                 {
-                    vertex P = {0, y, z};
-                    vertex A = {0, y1, z1};
-                    vertex B = {0, y2, z2};
-                    vertex C = {0, y3, z3};
-                    if (intersectant(dir, P, A, B, C))
-                    {
-			            if (dotproduct < 0)
-			            {
-			                point.enter = true;                        	
-                        	point.value = (d - normal.y*P.y - normal.z*P.z)/normal.x;
-                        	insertPoint(pointList[i][j], point, count);
-			            }
-			            else if (dotproduct > 0)
-			            {
-			                point.exit = true;                        	
-	                        point.value = (d - normal.y*P.y - normal.z*P.z)/normal.x;
-	                        insertPoint(pointList[i][j], point, count);
-			            } 
-			            else 
-			            {
-                            rational<int> value1 = -1, value2 = -1, temp[] = {-1, -1, -1, -1, -1, -1}; 
-                            if (y1 != y2)
-                                temp[0] = (x2 - x1) * (y - y1) / (y2 - y1) + x1;
-                            if (z1 != z2)
-                                temp[1] = (x2 - x1) * (z - z1) / (z2 - z1) + x1;
-                            if (y2 != y3)
-                            	temp[2] = (x2 - x3) * (z - z3) / (z2 - z3) + x3;
-                            if (z2 != z3)
-                            	temp[3] = (x2 - x3) * (z - z3) / (z2 - z3) + x3;
-                            if (y1 != y3)
-                                temp[4] = (x3 - x1) * (y - y1) / (y3 - y1) + x1;
-                            if (z1 != z3)
-                                temp[5] = (x3 - x1) * (z - z1) / (z3 - z1) + x1;
+		            if (dotproduct < 0)
+		            {
+		                point.enter = true;
+                    	point.value = (d - normal.x*P.x - normal.y*P.y)/normal.z;
+                    	insert_point(pointList[i][j], point, count);
+		            }
+		            else if (dotproduct > 0)
+		            {
+		                point.exit = true;                        	
+                        point.value = (d - normal.x*P.x - normal.y*P.y)/normal.z;
+                        insert_point(pointList[i][j], point, count);
+		            } 
+		            else 
+		            {	// tagging touch_start touch_end
+                        rational<int> value1 = -1, value2 = -1, temp[] = {-1, -1, -1, -1, -1, -1}; 
+                        if (x1 != x2)
+                            temp[0] = (z2 - z1) * (x - x1) / (x2 - x1) + z1;
+                        if (y1 != y2)
+                            temp[1] = (z2 - z1) * (y - y1) / (y2 - y1) + z1;
+                        if (x2 != x3)
+                        	temp[2] = (z2 - z3) * (x - x3) / (x2 - x3) + z3;
+                        if (y2 != y3)
+                        	temp[3] = (z2 - z3) * (y - y3) / (y2 - y3) + z3;
+                        if (x1 != x3)
+                            temp[4] = (z3 - z1) * (x - x1) / (x3 - x1) + z1;
+                        if (y1 != y3)
+                            temp[5] = (z3 - z1) * (y - y1) / (y3 - y1) + z1;
 
-                            int t = 0;
-                            for (t ; t < 6; ++t)
-                            {
-                            	if (temp[t] != -1)
-                            	{
-                            		value1 = temp[t];
-                            		break;
-                            	}
-                            }
-                            for (++t; t < 6; ++t)
-                            {
-                            	if (temp[t] != -1)
-                            	{
-                            		value2 = temp[t];
-                            		break;
-                            	}
-                            }
+                        int t = 0;
+                        for (t ; t < 6; ++t)
+                        {
+                        	if (temp[t] != -1)
+                        	{
+                        		value1 = temp[t];
+                        		break;
+                        	}
+                        }
+                        for (++t; t < 6; ++t)
+                        {
+                        	if (temp[t] != -1)
+                        	{
+                        		value2 = temp[t];
+                        		break;
+                        	}
+                        }
 
-                            if (value1 < value2)
-                            {                       		
-                            	point.value = value1;
-                            	point.touch1 = true;
-                            	insertPoint(pointList[i][j], point, count);
-                            	point.value = value2;
-                            	point.touch1 = false;
-                            	point.touch2 = true;
-                            	insertPoint(pointList[i][j], point, count);
-                            } 
-                            else if (value1 > value2)
-                            {                       		
-                            	point.value = value2;
-                            	point.touch1 = true;
-                            	insertPoint(pointList[i][j], point, count);
-                            	point.value = value1;
-                            	point.touch1 = false;
-                            	point.touch2 = true;
-                            	insertPoint(pointList[i][j], point, count);
-                            } else {                           	
-                            	point.value = value1;
-                            	point.touch1 = true;
-                            	point.touch2 = true;
-                            	insertPoint(pointList[i][j], point, count);
-                            }
+                        if (value1 < value2)
+                        {                       		
+                        	point.value = value1;
+                        	point.touchStart = true;
+                        	insert_point(pointList[i][j], point, count);
+                        	point.value = value2;
+                        	point.touchStart = false;
+                        	point.touchEnd = true;
+                        	insert_point(pointList[i][j], point, count);
+                        } 
+                        else if (value1 > value2)
+                        {                       		
+                        	point.value = value2;
+                        	point.touchStart = true;
+                        	insert_point(pointList[i][j], point, count);
+                        	point.value = value1;
+                        	point.touchStart = false;
+                        	point.touchEnd = true;
+                        	insert_point(pointList[i][j], point, count);
+                        } else {                           	
+                        	point.value = value1;
+                        	insert_point(pointList[i][j], point, count);
                         }
                     }
                 }
             }
-        }
-        else if (dir.y == 1)
-        {
-        }
-        else
-        {
-        }
-        /* triangle bounding box */
+        }        
         count++;
     }
+	/*--------------------------------------------------------------triangle processing---------------------------------------------------------------*/
 
+	/*----------------------------------------------------------------special tagging-----------------------------------------------------------------*/
+	for (int i = 0; i < nx; ++i)
+	{
+		for (int j = 0; j < ny; ++j)
+		{
+			for (auto pt : pointList[i][j])
+			{
+				if (pt.enter == true && pt.exit == true && pt.touchStart == false && pt.touchEnd == false)
+				{
+					if (pt.triNum.size() > 2)
+					{
+			    		unsigned parityCount = 0;
+			    		vector<Intersection2D> pointList2D;
+						for (auto n = pt.triNum.begin(); n != pt.triNum.end() ; n++)
+						{
+							auto v1 = vertexData[faceData[pt.triNum[*n]].v1];
+							auto v2 = vertexData[faceData[pt.triNum[*n]].v2];
+							auto v3 = vertexData[faceData[pt.triNum[*n]].v3];
 
-/*    cout<<"------------------------------"<<endl;
-    for (int i = 0; i < ny/10; ++i)
+							if (v1.z == pt.value)
+							{
+								parity_count(parityCount, pointList2D, v1, v2, v3);
+							}
+							else if (v2.z == pt.value)
+							{
+								parity_count(parityCount, pointList2D, v2, v3, v1);
+							}
+							else
+							{
+								parity_count(parityCount, pointList2D, v3, v1, v2);
+							}	
+						}
+
+						if (parityCount/2 == 1)
+						{
+							if (pointList2D[0].successor.x - pointList2D[0].predecessor.x < 0)
+							{
+								pt.exit = false;
+							} 
+							else{
+								pt.enter = false;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	/*----------------------------------------------------------------special tagging-----------------------------------------------------------------*/
+
+    /*------------------------------------------------------------------voxelization------------------------------------------------------------------*/
+    vector<vector<vector<unsigned char>>> voxel(nx);
+    for (int i = 0; i < nx; ++i)
+        voxel[i].resize(ny);
+    for (int i = 0; i < nx; ++i)
+        for (int j = 0; j < ny; ++j)
+            voxel[i][j].resize(nz);
+
+    for (int i = 0; i < nx; ++i)
     {
-        for (int j = 0; j < nz/10; ++j)
-        {
-            for (auto pot : pointList[i][j])
-            {
-                cout<<"(y="<<i<<", z="<<j<<", x="<<rational_cast<unsigned>(pot.value / voxelsize.x)<<", value="<<pot.value<<") ";
-                if (pot.enter)
-                    cout<<"enter ";
-                if (pot.exit)
-                    cout<<"exit ";
-                if (pot.touch1)
-                    cout<<"touch1";
-                if (pot.touch2)
-                    cout<<"touch2";
-                cout<< endl;
-            }
-        }
-    }
-    cout<<"------------------------------"<<endl;*/
-
-
-    vector<vector<vector<unsigned char>>> voxel(ny);
-    for (int i = 0; i < ny; ++i)
-        voxel[i].resize(nz);
-    for (int i = 0; i < ny; ++i)
-        for (int j = 0; j < nz; ++j)
-            voxel[i][j].resize(nx);
-
-    for (int i = 0; i < ny; ++i)
-    {
-        for (int j = 0; j < nz; ++j)
+        for (int j = 0; j < ny; ++j)
         {
             if (!pointList[i][j].empty())
             {   
-                
                 for (auto pt = pointList[i][j].begin(); pt != pointList[i][j].end(); pt++)
-                {                    
+                {
                     auto startValue = (*pt).value; 
-                    auto endValue = startValue;           
-                    unsigned k1 = rational_cast<unsigned>(startValue / voxelsize.x);
-                    auto voxelcenter1 = k1*voxelsize.x;
+                    auto endValue = startValue; 
+                    unsigned k1 = rational_cast<unsigned>(startValue / voxelSize.z);
+                    auto voxelCenter1 = k1*voxelSize.z;
 
                     if (pointList[i][j].size() > 1)
                     {
-                        if ((*pt).enter == true && (*pt).exit == false)
+                        if ((*pt).enter == true && (*pt).exit == false || (*pt).enter == true && (*pt).exit == true && (*pt).touchStart == true)
                         {   
-                            while (!((*pt).enter == false && (*pt).touch1 == false && (*pt).touch2 == false && (*pt).exit == true
-                            	  || (*pt).enter == false && (*pt).touch2 == true  && (*pt).exit == true))
+                            while (!((*pt).enter == false && (*pt).touchStart == false && (*pt).exit == true))
                             {
                                 pt++;
                                 if (pt == pointList[i][j].end())
-                                    cout<< "over"<<endl;                                
+                                    cout<< "over\n";                                
                             }
                             endValue = (*pt).value;
                             
-                            if (voxelcenter1 < startValue)
+                            if (voxelCenter1 < startValue)
                                 k1++;
                             
-                            unsigned k2 = rational_cast<unsigned>(endValue / voxelsize.x);
-                            auto voxelcenter2 = k2*voxelsize.x;
-                            if (voxelcenter2 > endValue)
+                            unsigned k2 = rational_cast<unsigned>(endValue / voxelSize.z);
+                            auto voxelCenter2 = k2*voxelSize.z;
+                            if (voxelCenter2 > endValue)
                                 k2--;
                             
                             while (k1 <= k2)
@@ -554,8 +623,9 @@ int main(int argc, char **argv)
                                 voxel[i][j][k1++] = 255;
                             }
                         }
+
                     }
-                    else if ((*pt).enter == true && (*pt).exit == true && (*pt).value == voxelcenter1)
+                    else if ((*pt).enter == true && (*pt).exit == true && (*pt).touchStart == false && (*pt).touchEnd == false && (*pt).value == voxelCenter1)
                     {
                         voxel[i][j][k1] = 255;
                     }
@@ -564,49 +634,49 @@ int main(int argc, char **argv)
         }
     }
 
-    unsigned char check;
-    vector<int> checkvox = {-1, -1, -1};
-    vector<vector<int>> lostVoxelList, extraVoxelList;
-    vector<vector<vector<intersection>>> lostPointList(ny);
-    for (int i = 0; i < ny; ++i)
-        lostPointList[i].resize(nz);
-    auto extraPointList = lostPointList;
-    for (int i = 0; i < ny; ++i)
-    {
-        for (int j = 0; j < nz; ++j)
-        {
-            for (int k = 0; k < nx; ++k)
-            {
-                if (checkmode == true)
-                {
-                    checkData >> check;
-                    if (check - voxel[i][j][k] > 0)
-                    {
-                        checkvox = {k, i, j};
-                        lostVoxelList.push_back(checkvox);
-                        lostPointList[i][j] = pointList[i][j];
-                        //lostVoxel26Connected << voxel[i][j][k];
-                    }
-                    else if (voxel[i][j][k] - check > 0)
-                    {
-                        checkvox = {k, i, j};
-                        extraVoxelList.push_back(checkvox);
-                        extraPointList[i][j] = pointList[i][j];
-                    }
-                }
-                //OUTPUT << voxel[i][j][k];
-            }
-        }
-    }
-
-	
-    for (int j = 0; j < nz; ++j)
-        for (int i = 0; i < ny; ++i)
-            for (int k = 0; k < nx; ++k)
+    for (int k = 0; k < nz; ++k)
+        for (int j = 0; j < ny; ++j)
+            for (int i = 0; i < nx; ++i)
             	OUTPUT << voxel[i][j][k];
+    /*------------------------------------------------------------------voxelization------------------------------------------------------------------*/
+
 
     if (checkmode == true)
     {
+        unsigned char check;
+	    vector<int> checkvox = {-1, -1, -1};
+	    vector<vector<int>> lostVoxelList, extraVoxelList;
+	    vector<vector<vector<Intersection>>> lostPointList(ny);
+	    for (int i = 0; i < ny; ++i)
+	        lostPointList[i].resize(nz);
+	    auto extraPointList = lostPointList;
+	    for (int i = 0; i < ny; ++i)
+	    {
+	        for (int j = 0; j < nz; ++j)
+	        {
+	            for (int k = 0; k < nx; ++k)
+	            {
+	                if (checkmode == true)
+	                {
+	                    checkData >> check;
+	                    if (check - voxel[i][j][k] > 0)
+	                    {
+	                        checkvox = {k, i, j};
+	                        lostVoxelList.push_back(checkvox);
+	                        lostPointList[i][j] = pointList[i][j];
+	                        //lostVoxel_26connected << voxel[i][j][k];
+	                    }
+	                    else if (voxel[i][j][k] - check > 0)
+	                    {
+	                        checkvox = {k, i, j};
+	                        extraVoxelList.push_back(checkvox);
+	                        extraPointList[i][j] = pointList[i][j];
+	                    }
+	                }
+	            }
+	        }
+	    }
+
         vector<vector<int>> checkRay(ny);
         for (int i = 0; i < ny; ++i)
         	checkRay[i].resize(nz);
@@ -616,8 +686,7 @@ int main(int argc, char **argv)
         {
         	checkRay[cor[1]][cor[2]] = 1;
             cout << "--------------------------" << endl;
-            cout << "Lost voxel: (" << cor[0] <<", "<< cor[1]<<", "<< cor[2] <<")";
-            cout << "	Fiji coordinate: (" << cor[0] <<", "<< cor[2]<<", "<< cor[1] <<")"<< endl << endl;
+            cout << "Lost voxel: (" << cor[0] <<", "<< cor[1]<<", "<< cor[2] <<")"<< endl << endl;
             for (auto checkpoint : lostPointList[cor[1]][cor[2]])
             {
                 cout << "x = " << checkpoint.value << "  condition:";
@@ -625,17 +694,17 @@ int main(int argc, char **argv)
                 	cout << " enter";
                 if (checkpoint.exit)
                     cout << " exit";
-                if (checkpoint.touch1)
-                    cout << " touch1";
-                if (checkpoint.touch2)
-                    cout << " touch2";
+                if (checkpoint.touchStart)
+                    cout << " touchStart";
+                if (checkpoint.touchEnd)
+                    cout << " touchEnd";
                 cout << endl;
 
                 for (auto trinum : checkpoint.triNum)
                 {
-                    cout <<" v1("<< Vertex[Face[trinum].v1].x <<", "<< Vertex[Face[trinum].v1].y <<", "<< Vertex[Face[trinum].v1].z <<"),";
-                    cout <<" v2("<< Vertex[Face[trinum].v2].x <<", "<< Vertex[Face[trinum].v2].y <<", "<< Vertex[Face[trinum].v2].z <<"),";
-                    cout <<" v3("<< Vertex[Face[trinum].v3].x <<", "<< Vertex[Face[trinum].v3].y <<", "<< Vertex[Face[trinum].v3].z <<")"<<endl;
+                    cout <<" v1("<< vertexData[faceData[trinum].v1].x <<", "<< vertexData[faceData[trinum].v1].y <<", "<< vertexData[faceData[trinum].v1].z <<"),";
+                    cout <<" v2("<< vertexData[faceData[trinum].v2].x <<", "<< vertexData[faceData[trinum].v2].y <<", "<< vertexData[faceData[trinum].v2].z <<"),";
+                    cout <<" v3("<< vertexData[faceData[trinum].v3].x <<", "<< vertexData[faceData[trinum].v3].y <<", "<< vertexData[faceData[trinum].v3].z <<")\n";
                     cout << endl;
                 }
             }
@@ -645,8 +714,7 @@ int main(int argc, char **argv)
         {
         	checkRay[cor[1]][cor[2]] = 1;
             cout << "--------------------------" << endl;
-            cout << "Extra voxel: (" << cor[0] <<", "<< cor[1]<<", "<< cor[2] <<")";
-            cout << "	Fiji coordinate: (" << cor[0] <<", "<< cor[2]<<", "<< cor[1] <<")"<< endl << endl;
+            cout << "Extra voxel: (" << cor[0] <<", "<< cor[1]<<", "<< cor[2] <<")"<< endl << endl;
             for (auto checkpoint : extraPointList[cor[1]][cor[2]])
             {
                 cout << "x = " << checkpoint.value << "  condition:";
@@ -654,17 +722,17 @@ int main(int argc, char **argv)
                 	cout << " enter";
                 if (checkpoint.exit)
                     cout << " exit";
-                if (checkpoint.touch1)
-                    cout << " touch1";
-                if (checkpoint.touch2)
-                    cout << " touch2";
+                if (checkpoint.touchStart)
+                    cout << " touchStart";
+                if (checkpoint.touchEnd)
+                    cout << " touchEnd";
                 cout << endl;
 
                 for (auto trinum : checkpoint.triNum)
                 {
-                    cout <<" v1("<< Vertex[Face[trinum].v1].x <<", "<< Vertex[Face[trinum].v1].y <<", "<< Vertex[Face[trinum].v1].z <<"),";
-                    cout <<" v2("<< Vertex[Face[trinum].v2].x <<", "<< Vertex[Face[trinum].v2].y <<", "<< Vertex[Face[trinum].v2].z <<"),";
-                    cout <<" v3("<< Vertex[Face[trinum].v3].x <<", "<< Vertex[Face[trinum].v3].y <<", "<< Vertex[Face[trinum].v3].z <<")"<<endl;
+                    cout <<" v1("<< vertexData[faceData[trinum].v1].x <<", "<< vertexData[faceData[trinum].v1].y <<", "<< vertexData[faceData[trinum].v1].z <<"),";
+                    cout <<" v2("<< vertexData[faceData[trinum].v2].x <<", "<< vertexData[faceData[trinum].v2].y <<", "<< vertexData[faceData[trinum].v2].z <<"),";
+                    cout <<" v3("<< vertexData[faceData[trinum].v3].x <<", "<< vertexData[faceData[trinum].v3].y <<", "<< vertexData[faceData[trinum].v3].z <<")\n";
                     cout << endl;
                 }
             }
