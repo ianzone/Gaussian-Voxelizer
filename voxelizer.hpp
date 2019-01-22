@@ -21,11 +21,11 @@ struct Coordinate
 struct Intersection
 {
     rational<int> value;        // z coordinate of ray-mesh intersection point
-    bool enter = false;         // ray is entering mesh
-    bool exit = false;          // ray is exiting mesh
-    bool touch_start = false;    // touch means the ray is on the surface
-    bool touch_end = false;
-    vector<int> shared_face;         // related triangle number
+    bool enter       = false;   // ray is entering mesh
+    bool exit        = false;   // ray is exiting mesh
+    bool touch_start = false;   // touch means the ray is on the surface
+    bool touch_end   = false;
+    vector<int> shared_face;    // faces that sharing this intersection point
 };
 
 class Mesh
@@ -33,19 +33,19 @@ class Mesh
   private:
     const Coordinate ray{0, 0, 1};
     vector<vector<vector<Intersection>>> intersection_points_along_ray;
-    void insert_intersection_point(int i, int j, Intersection &point, int face_num);
-    bool intersectant(rational<int> x, rational<int> y, Coordinate &A, Coordinate &B, Coordinate &C);
-    void ray_triangle_intersection(Coordinate &space_lower_bound, Coordinate &voxel_size, int face_num);
+    bool intersectant(rational<int> x, rational<int> y, Coordinate A, Coordinate B, Coordinate C);
+    void insert_intersection_point_along_ray(int i, int j, const Intersection &point, int face_num);
+    void get_ray_triangle_intersection_points(const Coordinate &space_lower_bound, const Coordinate &voxel_size, int face_num);
 
   public:
     Mesh() { }
     ~Mesh() { }
     void read(string input);
-    void translate_vertex();
-    void triangulate_face();
-    void convert_face_normal();
-    void voxelize(Coordinate &space_lower_bound, Coordinate &space_upper_bound, Coordinate &number_of_voxels, bool convert_normal);
-    
+    void translate_vertices();
+    void triangulate_faces();
+    void convert_faces_normal();
+    void voxelize(const Coordinate &space_lower_bound, const Coordinate &space_upper_bound, const Coordinate &number_of_voxels, const string &output, bool convert_normal);
+
     // initialized in read()
     int number_of_vertices;
     int number_of_faces;
@@ -59,8 +59,8 @@ class Mesh
     // initialized in read()
 };
 
+string input, output;
 extern bool convert_normal;
-extern string input, output;
 extern Coordinate space_lower_bound, space_upper_bound, number_of_voxels;
 
 rational<int> to_rational(const char str[]);
