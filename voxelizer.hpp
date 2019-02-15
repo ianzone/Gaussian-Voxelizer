@@ -30,15 +30,16 @@ struct Intersection
 
 class Mesh
 {
-  private:
+    private:
     const Coordinate ray{0, 0, 1};
     vector<vector<vector<Intersection>>> intersection_points_along_ray;
     bool intersectant(rational<int> x, rational<int> y, Coordinate A, Coordinate B, Coordinate C);
     void insert_intersection_point_along_ray(int i, int j, const Intersection &point, int face_num);
-    void get_ray_triangle_intersection_points(const Coordinate &space_lower_bound, const Coordinate &voxel_size, int face_num);
-
-  public:
-    Mesh() { }
+    void process_ray_triangle_intersection(const Coordinate &space_lower_bound, const Coordinate &voxel_size, int face_num);
+    void tag_ray_mesh_intersection_points(const Coordinate &voxel_size)
+    
+    public: 
+    Mesh() {}
     ~Mesh() { }
     void read(string input);
     void translate_vertices();

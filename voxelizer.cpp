@@ -128,7 +128,7 @@ Coordinate operator*(const Coordinate &a, const Coordinate &b)
     return p;
 }
 
-void Mesh::read(string input)
+void Mesh::read(const string &input)
 {
     ifstream data(input);
     if (!data)
@@ -236,6 +236,7 @@ void Mesh::read(string input)
         auto vector2 = vertex[a_face[2]] - vertex[a_face[1]];
         face_normal.push_back(vector1*vector2);
     }
+    data.close();
 }
 
 // void Mesh::translate_vertex()
@@ -303,7 +304,7 @@ void Mesh::insert_intersection_point_along_ray(int i, int j, const Intersection 
         }
 }
 
-void Mesh::get_ray_triangle_intersection_points(const Coordinate &space_lower_bound, const Coordinate &voxel_size, int face_num)
+void Mesh::process_ray_triangle_intersection(const Coordinate &space_lower_bound, const Coordinate &voxel_size, int face_num)
 {
     // three vertices of the triangle
     int v1 = face[face_num][0];
@@ -428,6 +429,131 @@ void Mesh::get_ray_triangle_intersection_points(const Coordinate &space_lower_bo
     }
 }
 
+void Mesh::tag_ray_mesh_intersection_points(const Coordinate &voxel_size)
+{
+    intersection_points_along_ray.resize(number_of_voxels.x);
+    for (int i = 0; i < number_of_voxels.x; i++)
+    {
+        intersection_points_along_ray[i].resize(number_of_voxels.y);
+    }
+
+    for (int face_num = 0; face_num < number_of_faces; face_num++)
+    {
+        process_ray_triangle_intersection(space_lower_bound, voxel_size, face_num);
+    }
+
+    for (int i = 0; i < number_of_voxels.x; i++)
+    {
+        for (int j = 0; j < number_of_voxels.y; j++)
+        {
+            auto x = space_lower_bound.x + voxel_size.x * i;
+            auto y = space_lower_bound.y + voxel_size.y * j;
+            for (auto pt : intersection_points_along_ray[i][j])
+            {
+                if (pt.shared_face.size() > 2 && pt.enter == true && pt.exit == true && pt.touch_start == false && pt.touch_end == false)
+                {
+                    int parity_count = 0;
+                    bool left_pt_exist = right_pt_exist = edge_left_to_right = edge_right_to_left = false;
+                    bool closest_edge = true;
+
+                    for (auto face_num : pt.shared_face)
+                    {
+                        int v1 = face[face_num][0];
+                        int v2 = face[face_num][1];
+                        int v3 = face[face_num][2];
+
+                        // opposite edge of shared triangle on xy plane
+                        rational<int> x1, x2, y3, linear_formula_a, linear_formula_b;
+                        if (vertex[v1].x == x && vertex[v1].y == y)
+                        {
+                            x1 = vertex[v2].x;
+                            y1 = vertex[v2].y;
+                            x2 = vertex[v3].x;
+                            y2 = vertex[v3].y;
+                        }
+                        else if (vertex[v2].x == x && vertex[v2].y == y)
+                        {
+                            x1 = vertex[v3].x;
+                            y1 = vertex[v3].y;
+                            x2 = vertex[v1].x;
+                            y2 = vertex[v1].y;
+                        }
+                        else if (vertex[v3].x == x && vertex[v3].y == y)
+                        {
+                            x1 = vertex[v1].x;
+                            y1 = vertex[v1].y;
+                            x2 = vertex[v2].x;
+                            y2 = vertex[v2].y;
+                        }
+
+                        // ray from projected intersection point against y-axis
+                        if (x1 != x2 && (x1 <= x && x <= x2 || x2 <= x && x <= x1))
+                        {
+                            linear_formula_a = (y2 - y1) / (x2 - x1);
+                            linear_formula_b = y1 - a * x1;
+                            y3 = linear_formula_a * x + linear_formula_b;
+
+                            if (y3 < y) 
+                            {
+                                // ray-edge intersection point on vertex
+                                if (x == x1 && x1 < x2 || x == x2 && x2 < x1) 
+                                {
+                                    if (right_pt_exist)
+                                    {
+                                        parity_count++;
+                                    }
+                                    right_pt_exist = true;
+                                }
+                                else if (x == x1 && x2 < x1 || x == x2 && x1 < x2)
+                                {
+                                    if (left_pt_exist)
+                                    {
+                                        parity_count++;
+                                    }
+                                    left_pt_exist = true;
+                                }
+                                else
+                                {
+                                    parity_count++;
+                                    if (right_pt_exist && left_pt_exist)
+                                    {
+                                        parity_count--;
+                                    }
+
+                                    if (closest_edge) 
+                                    {
+                                        if (x1 < x2) 
+                                        {
+                                            edge_left_to_right = true;
+                                        }
+                                        else
+                                        {
+                                            edge_right_to_left = true;
+                                        }
+                                        closest_edge = false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (parity_count/2 == 1) 
+                    {
+                        if (edge_left_to_right)
+                        {
+                            pt.enter = false;
+                        }
+                        if (edge_right_to_left)
+                        {
+                            pt.exit = false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 void Mesh::voxelize(const Coordinate &space_lower_bound, const Coordinate &space_upper_bound, const Coordinate &number_of_voxels, const string &output, bool convert_normal)
 {
     // if (!not_triangle_face.empty())
@@ -436,32 +562,88 @@ void Mesh::voxelize(const Coordinate &space_lower_bound, const Coordinate &space
     // if (convert_normal)
     //     convert_faces_normal();
 
-    intersection_points_along_ray.resize(number_of_voxels.x);
-    for (int i = 0; i < number_of_voxels.x; i++) {
-        intersection_points_along_ray[i].resize(number_of_voxels.y);
-    }
-
     Coordinate voxel_size;
     voxel_size.x = (space_upper_bound.x - space_lower_bound.x) / number_of_voxels.x;
     voxel_size.y = (space_upper_bound.y - space_lower_bound.y) / number_of_voxels.y;
     voxel_size.z = (space_upper_bound.z - space_lower_bound.z) / number_of_voxels.z;
 
-    for (int face_num = 0; face_num < number_of_faces; face_num++) {
-        get_ray_triangle_intersection_points(space_lower_bound, voxel_size, face_num);
+    tag_ray_mesh_intersection_points(voxel_size);
+
+    vector<vector<vector<unsigned char>>> voxel(number_of_voxels.x);
+    for (int i = 0; i < number_of_voxels.x; i++)
+    {
+        voxel[i].resize(number_of_voxels.y);
+    }
+    for (int i = 0; i < number_of_voxels.x; i++)
+    {
+        for (int j = 0; j < number_of_voxels.y; j++)
+        {
+            voxel[i][j].resize(number_of_voxels.z, 0);
+        }
     }
 
     for (int i = 0; i < number_of_voxels.x; i++)
     {
         for (int j = 0; j < number_of_voxels.y; j++)
         {
-            if (!intersection_points_along_ray[i][j].empty())
+            auto voxel_center = space_lower_bound.z;
+
+            for (auto pt = intersection_points_along_ray[i][j].begin(); pt != intersection_points_along_ray[i][j].end(); pt++)
             {
-                for (auto pt = intersection_points_along_ray[i][j].begin(); pt != intersection_points_along_ray[i][j].end(); pt++)
+                int times_in_z = rational_cast<int>((lower_bound.z - space_lower_bound.z) / voxel_size.z);
+                voxel_center += times_in_z * voxel_size.z;
+
+                if ((*pt).size() > 1 && ((*pt).enter == true && (*pt).exit == false || (*pt).touch_start == true))
                 {
-                    
+                    if (voxel_center == (*pt).value)
+                    {
+                        voxel[i][j][times_in_z] = 255;
+                    }
+                    times_in_z++;
+                    voxel_center += times_in_z * voxel_size.z;
+
+                    while (!((*pt).exit == true && (*pt).enter == false && (*pt).touch_start == false))
+                    {
+                        pt++;
+                        if (pt == intersection_points_along_ray[i][j].end())
+                        {
+                            printf("segfault at %d\n", __LINE__);
+                        }
+                    }
+                    while (voxel_center <= (*pt).value)
+                    {
+                        voxel[i][j][times_in_z] = 255;
+                        times_in_z++;
+                        voxel_center += times_in_z * voxel_size.z;
+                    }
+                }
+                else if ((*pt).size() == 1)
+                {
+                    if (voxel_center == (*pt).value) {
+                        voxel[i][j][times_in_z] = 255;
+                    }
                 }
             }
         }
     }
-    
+
+    ofstream voxel_set(output);
+    if (!voxel_set)
+    {
+        cerr << "can not create output file!\n";
+        exit(1);
+    }
+
+    for (int k = 0; k < number_of_voxels.z; k++)
+    {
+        for (int j = 0; j < number_of_voxels.y; j++)
+        {
+            for (int i = 0; i < number_of_voxels.x; i++)
+            {
+                voxel_set << voxel[i][j][k];
+            }
+        }
+    }
+
+    voxel_set.close();
 }
