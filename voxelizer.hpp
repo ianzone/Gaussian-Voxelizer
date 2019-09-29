@@ -10,66 +10,77 @@
 
 #include "boost/rational.hpp"
 
-using namespace std;
-using namespace boost;
-
 struct Coordinate
 {
-    rational<int> x, y, z;
+    boost::rational<int> x, y, z;
 };
 
-struct Intersection
+class Vector : public Coordinate
 {
-    rational<int> value;        // z coordinate of ray-mesh intersection point
-    bool enter       = false;   // ray is entering mesh
-    bool exit        = false;   // ray is exiting mesh
-    bool touch_start = false;   // touch means the ray is on the surface
-    bool touch_end   = false;
-    vector<int> shared_face;    // faces that sharing this intersection point
+    public:
+    Vector()=default;
+    Vector(const Coordinate& a, const Coordinate& b);
+    ~Vector(){};
+    boost::rational<int> DotProduct(const Vector& v);
+    // Vector operator+(const Coordinate &a, const Coordinate &b);
+    // Vector operator-(const Coordinate &a, const Coordinate &b);
+    Vector operator*(const Vector& v);
 };
+
+// struct Intersection
+// {
+//     boost::rational<int> value; // coordinate of ray-mesh intersection point in this case is z axis
+//     bool enter       = false;   // ray is entering the mesh
+//     bool exit        = false;   // ray is exiting the mesh
+//     bool touch_start = false;   // touch means the ray is on the surface
+//     bool touch_end   = false;
+//     std::vector<int> sharedFaces;    // faces that sharing this intersection point
+// };
 
 class Mesh
 {
-    private:
-    const Coordinate ray{0, 0, 1};
-    vector<vector<vector<Intersection>>> intersection_points_along_ray;
-    bool intersectant(rational<int> x, rational<int> y, Coordinate A, Coordinate B, Coordinate C);
-    void insert_intersection_point_along_ray(int i, int j, const Intersection &point, int face_num);
-    void process_ray_triangle_intersection(const Coordinate &space_lower_bound, const Coordinate &voxel_size, int face_num);
-    void tag_ray_mesh_intersection_points(const Coordinate &voxel_size)
-    
     public: 
-    Mesh() {}
-    ~Mesh() { }
-    void read(string input);
-    void translate_vertices();
-    void triangulate_faces();
-    void convert_faces_normal();
-    void voxelize(const Coordinate &space_lower_bound, const Coordinate &space_upper_bound, const Coordinate &number_of_voxels, const string &output, bool convert_normal);
+    Mesh(const std::string& inputFile);
+    ~Mesh() {}
+    
+    // void Triangulate();
+    // void convert_faces_normal();
+    // void Voxelize(const Coordinate &spaceLowerBound, const Coordinate &spaceUpperBound, const Coordinate &voxelAmt, const std::string &output, bool reverseFaceNormal);
 
-    // initialized in read()
-    int number_of_vertices;
-    int number_of_faces;
-    int number_of_edges;
-    Coordinate lower_bound;
-    Coordinate upper_bound;
-    vector<Coordinate> vertex;
-    vector<vector<int>> face;
-    vector<Coordinate> face_normal;
-    vector<int> not_triangle_face;
-    // initialized in read()
+    // initialized in LoadFile()
+    int vertexAmt;
+    int faceAmt;
+    int edgeAmt;
+    Coordinate lowerBound;
+    Coordinate upperBound;
+    std::vector<Coordinate> vertex;
+    std::vector<std::array<int, 3>> face;
+    std::vector<Vector> faceNormal;
+    // initialized in LoadFile()
+
+    // private:
+    // const Coordinate ray{0, 0, 1};
+    // std::vector<std::vector<std::vector<Intersection>>> intersection_points_along_ray;
+    // bool IsIntersectant(boost::rational<int> x, boost::rational<int> y, Coordinate A, Coordinate B, Coordinate C);
+    // void insert_intersection_point_along_ray(int i, int j, const Intersection &point, int face_num);
+    // void process_ray_triangle_intersection(const Coordinate &spaceLowerBound, const Coordinate &voxel_size, int face_num);
+    // void tag_ray_mesh_intersection_points(const Coordinate &voxel_size);
 };
 
-string input, output;
-extern bool convert_normal;
-extern Coordinate space_lower_bound, space_upper_bound, number_of_voxels;
 
-rational<int> to_rational(const char str[]);
-rational<int> to_rational(string str);
-rational<int> dot_product(Coordinate a, Coordinate b);
-Coordinate operator+(const Coordinate &a, const Coordinate &b);
-Coordinate operator-(const Coordinate &a, const Coordinate &b);
-Coordinate operator*(const Coordinate &a, const Coordinate &b);
-void process_command(int argc, char const *argv[]);
+// boost::rational<int> ToRational(const char str[]);
+boost::rational<int> ToRational(const std::string& str);
+//void ProcessCommand(int argc, char const *argv[]);
+
+class Command
+{
+    public:
+    Command(int argc, char const *argv[]);
+    ~Command(){};
+    
+    std::string inputFile, outputFile;
+    bool reverseFaceNormal = false;
+    Coordinate spaceLowerBound{0,0,0}, spaceUpperBound{255,255,255}, voxelAmt{255,255,255};
+};
 
 #endif
