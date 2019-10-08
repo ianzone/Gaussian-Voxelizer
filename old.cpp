@@ -16,7 +16,7 @@ typedef struct Vertex
 
 struct Face
 {
-    unsigned v1, v2, v3;
+    int v1, v2, v3;
 };
 
 struct Intersection 
@@ -97,8 +97,8 @@ struct Intersection2D
 	} predecessor, successor;
 };
 
-void insert_point2D(unsigned &parityCount, vector<Intersection2D> &pl, Intersection2D point2D);
-void insert_point2D(unsigned &parityCount, vector<Intersection2D> &pl, Intersection2D point2D)
+void insert_point2D(int &parityCount, vector<Intersection2D> &pl, Intersection2D point2D);
+void insert_point2D(int &parityCount, vector<Intersection2D> &pl, Intersection2D point2D)
 {
 	if (pl.empty())
         pl.push_back(point2D);
@@ -137,8 +137,8 @@ void insert_point2D(unsigned &parityCount, vector<Intersection2D> &pl, Intersect
     }
 }
 
-void parity_count(unsigned &parityCount, vector<Intersection2D> &pl, Vertex point, Vertex edgeHead, Vertex edgeTail);
-void parity_count(unsigned &parityCount, vector<Intersection2D> &pl, Vertex point, Vertex edgeHead, Vertex edgeTail)
+void parity_count(int &parityCount, vector<Intersection2D> &pl, Vertex point, Vertex edgeHead, Vertex edgeTail);
+void parity_count(int &parityCount, vector<Intersection2D> &pl, Vertex point, Vertex edgeHead, Vertex edgeTail)
 {
 	if (edgeHead.x <= point.x && point.x <= edgeTail.x || edgeTail.x <= point.x && point.x <= edgeHead.x)
 	{
@@ -189,26 +189,29 @@ int main(int argc, char **argv)
             }
             else if (!strcmp(*argv, "-smin"))
             {
-            	string coor; int len; double x, y, z;
+            	string coor; int len, x, y, z, denominator;
                 argv++; argc--;
                 coor = *argv;
                 len = coor.size();
-                x = stod(coor); 
-                rational<int> spacex(x*pow(10, len), pow(10, len));
+                denominator = pow(10, len);
+                x = stod(coor)*denominator; 
+                rational<int> spacex(x, denominator);
                 spacemin.x = spacex+0;
 
                 argv++; argc--;
                 coor = *argv;
                 len = coor.size();
-                y = stod(coor);
-                rational<int> spacey(y*pow(10, len), pow(10, len));
+                denominator = pow(10, len);
+                y = stod(coor)*denominator;
+                rational<int> spacey(y, denominator);
                 spacemin.y = spacey+0;
                 
                 argv++; argc--;
                 coor = *argv;
                 len = coor.size();
-                z = stod(coor);
-                rational<int> spacez(z*pow(10, len), pow(10, len));
+                denominator = pow(10, len);
+                z = stod(coor)*denominator;
+                rational<int> spacez(z, denominator);
                 spacemin.z = spacez+0;
                 cout<<spacemin.x<<endl<<spacemin.y<<endl<<spacemin.z<<endl;
                 if (spacemin.x * spacemin.y * spacemin.z < 0)
@@ -219,26 +222,29 @@ int main(int argc, char **argv)
             }
             else if (!strcmp(*argv, "-smax"))
             {
-            	string coor; int len; double x, y, z;
+            	string coor; int len, x, y, z, denominator;
                 argv++; argc--;
                 coor = *argv;
                 len = coor.size();
-                x = stod(coor);
-                rational<int> spacex(x*pow(10, len), pow(10, len));
+                denominator = pow(10, len);
+                x = stod(coor)*denominator; 
+                rational<int> spacex(x, denominator);
                 spacemax.x = spacex+0;
 
                 argv++; argc--;
                 coor = *argv;
                 len = coor.size();
-                y = stod(coor);
-                rational<int> spacey(y*pow(10, len), pow(10, len));
+                denominator = pow(10, len);
+                y = stod(coor)*denominator;
+                rational<int> spacey(y, denominator);
                 spacemax.y = spacey+0;
                 
                 argv++; argc--;
                 coor = *argv;
                 len = coor.size();
-                z = stod(coor);
-                rational<int> spacez(z*pow(10, len), pow(10, len));
+                denominator = pow(10, len);
+                z = stod(coor)*denominator;
+                rational<int> spacez(z, denominator);
                 spacemax.z = spacez+0;
                 
                 if (spacemax.x < 0 || spacemax.y < 0 || spacemax.z < 0)
@@ -344,7 +350,7 @@ int main(int argc, char **argv)
         DATA >> S;
         len = S.size();
         s = stod(S);
-        rational<int> x(s*pow(10, len), pow(10, len));
+        rational<int> x((int)(s*pow(10, len)), (int)(pow(10, len)));
 	    if (x - spacemin.x < 0)
 	    {
 	    	cerr << "please give a smaller x of Space size\n";
@@ -360,7 +366,7 @@ int main(int argc, char **argv)
         DATA >> S;
         len = S.size();
         s = stod(S);
-        rational<int> y(s*pow(10, len), pow(10, len));
+        rational<int> y((int)(s*pow(10, len)), (int)(pow(10, len)));
         if (y - spacemin.y < 0)
 	    {
 	    	cerr << "please give a smaller y of Space size\n";
@@ -376,7 +382,7 @@ int main(int argc, char **argv)
         DATA >> S;
         len = S.size();
         s = stod(S);
-        rational<int> z(s*pow(10, len), pow(10, len));
+        rational<int> z((int)(s*pow(10, len)), (int)(pow(10, len)));
         if (z - spacemin.z < 0)
 	    {
 	    	cerr << "please give a smaller z of Space size\n";
@@ -395,7 +401,7 @@ int main(int argc, char **argv)
     {
         DATA >> S;
         DATA >> S;
-        unsigned s = stoi(S);
+        int s = stoi(S);
         faceData[i].v1 = s;
         DATA >> S;
         s = stoi(S);
@@ -463,17 +469,17 @@ int main(int argc, char **argv)
             triboundmax.y = y3;
 
         // minimum coordinate of triangle's related voxel
-        unsigned numx = rational_cast<unsigned>(triboundmin.x / voxelSize.x);
-        unsigned numy = rational_cast<unsigned>(triboundmin.y / voxelSize.y);
+        int numx = rational_cast<int>(triboundmin.x / voxelSize.x);
+        int numy = rational_cast<int>(triboundmin.y / voxelSize.y);
         auto trivoxelxmin = numx * voxelSize.x;
         auto trivoxelymin = numy * voxelSize.y;
 
         Intersection point;
 
-        unsigned i = numx;
+        int i = numx;
         for (auto x = trivoxelxmin; x <= triboundmax.x; x+=voxelSize.x, i++)
         {
-            unsigned j = numy;
+            int j = numy;
             for (auto y = trivoxelymin; y <= triboundmax.y; y+=voxelSize.y, j++)
             {
                 Vertex P = {x, y, 0};
@@ -570,7 +576,7 @@ int main(int argc, char **argv)
 				{
 					if (pt.triNum.size() > 2)
 					{
-			    		unsigned parityCount = 0;
+			    		int parityCount = 0;
 			    		vector<Intersection2D> pointList2D;
 						for (auto n = pt.triNum.begin(); n != pt.triNum.end() ; n++)
 						{
@@ -627,7 +633,7 @@ int main(int argc, char **argv)
                 {
                     auto startValue = (*pt).value; 
                     auto endValue = startValue; 
-                    unsigned k1 = rational_cast<unsigned>(startValue / voxelSize.z);
+                    int k1 = rational_cast<int>(startValue / voxelSize.z);
                     auto voxelCenter1 = k1*voxelSize.z;
 
                     if (pointList[i][j].size() > 1)
@@ -645,7 +651,7 @@ int main(int argc, char **argv)
                             if (voxelCenter1 < startValue)
                                 k1++;
                             
-                            unsigned k2 = rational_cast<unsigned>(endValue / voxelSize.z);
+                            int k2 = rational_cast<int>(endValue / voxelSize.z);
                             auto voxelCenter2 = k2*voxelSize.z;
                             if (voxelCenter2 > endValue)
                                 k2--;

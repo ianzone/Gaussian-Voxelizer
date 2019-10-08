@@ -3,84 +3,107 @@
 
 #include <string>
 #include <vector>
+#include <list>
 #include <fstream>
 #include <iostream>
 #include <cmath>
 #include <cstring>
+#include <functional>
+#include <unordered_map>
 
 #include "boost/rational.hpp"
 
+boost::rational<int> stor(const std::string& str);
+
+struct Counter
+{
+    int x,y,z;
+};
+
 struct Coordinate
 {
+    Coordinate()=default;
+    Coordinate(const boost::rational<int> i, const boost::rational<int> j, const boost::rational<int> k):x(i), y(j), z(k){};
     boost::rational<int> x, y, z;
 };
 
-class Vector : public Coordinate
+struct BoundingBox
 {
-    public:
-    Vector()=default;
-    Vector(const Coordinate& a, const Coordinate& b);
-    ~Vector(){};
-    boost::rational<int> DotProduct(const Vector& v);
-    // Vector operator+(const Coordinate &a, const Coordinate &b);
-    // Vector operator-(const Coordinate &a, const Coordinate &b);
-    Vector operator*(const Vector& v);
+    Coordinate min, max;
 };
 
-// struct Intersection
-// {
-//     boost::rational<int> value; // coordinate of ray-mesh intersection point in this case is z axis
-//     bool enter       = false;   // ray is entering the mesh
-//     bool exit        = false;   // ray is exiting the mesh
-//     bool touch_start = false;   // touch means the ray is on the surface
-//     bool touch_end   = false;
-//     std::vector<int> sharedFaces;    // faces that sharing this intersection point
-// };
+struct Vector : public Coordinate
+{
+    Vector()=default;
+    Vector(const boost::rational<int> x, const boost::rational<int> y, const boost::rational<int> z) : Coordinate(x,y,z){};
+    Vector(const Coordinate& a, const Coordinate& b) : Coordinate(b.x - a.x, b.y - a.y, b.z - a.z){};
+    ~Vector(){};
+    Vector operator*(const Vector& v);
+    boost::rational<int> DotProduct(const Vector& v) const;
+};
 
 class Mesh
 {
-    public: 
-    Mesh(const std::string& inputFile);
-    ~Mesh() {}
-    
-    // void Triangulate();
-    // void convert_faces_normal();
-    // void Voxelize(const Coordinate &spaceLowerBound, const Coordinate &spaceUpperBound, const Coordinate &voxelAmt, const std::string &output, bool reverseFaceNormal);
+    public:
+    Mesh()=default;
+    Mesh(const std::string& meshFile, const bool insideout);
+    ~Mesh(){}
 
-    // initialized in LoadFile()
     int vertexAmt;
     int faceAmt;
     int edgeAmt;
-    Coordinate lowerBound;
-    Coordinate upperBound;
+    BoundingBox bound;
     std::vector<Coordinate> vertex;
     std::vector<std::array<int, 3>> face;
-    std::vector<Vector> faceNormal;
-    // initialized in LoadFile()
+    std::vector<Vector> normal;
+    void WriteOut(std::string meshFile="");
 
-    // private:
-    // const Coordinate ray{0, 0, 1};
-    // std::vector<std::vector<std::vector<Intersection>>> intersection_points_along_ray;
-    // bool IsIntersectant(boost::rational<int> x, boost::rational<int> y, Coordinate A, Coordinate B, Coordinate C);
-    // void insert_intersection_point_along_ray(int i, int j, const Intersection &point, int face_num);
-    // void process_ray_triangle_intersection(const Coordinate &spaceLowerBound, const Coordinate &voxel_size, int face_num);
-    // void tag_ray_mesh_intersection_points(const Coordinate &voxel_size);
+    private:
+    const std::string fileName;
+    bool triangulated = false;
+    bool reverseNormal = false;
 };
 
-
-// boost::rational<int> ToRational(const char str[]);
-boost::rational<int> ToRational(const std::string& str);
-//void ProcessCommand(int argc, char const *argv[]);
-
-class Command
+class Voxelizer
 {
     public:
+    Voxelizer()=default;
+    Voxelizer(const Mesh& mesh, BoundingBox& space, const Vector& Ray, const Counter& voxelAmount);
+    ~Voxelizer(){};
+
+    void Voxelize(const Mesh& mesh, BoundingBox& space, const Vector& Ray, const Counter& voxelAmount);
+    void WriteOut(const std::string& voxelFile);
+    std::vector<std::vector<std::vector<unsigned char>>> voxel;
+
+    private:
+    struct Intersection
+    {
+        boost::rational<int> value; // coordinate of intersection point along a given ray
+        bool enter      = false;    // ray is entering the mesh
+        bool exit       = false;    // ray is exiting the mesh
+        bool touchStart = false;    // touch means the ray is on the surface
+        bool touchEnd   = false;
+        std::vector<int> sharedFaces;    // face that sharing this intersection point
+    };
+    Vector ray;
+    Counter voxelAmt;
+    Coordinate voxelSize;
+    std::vector<std::vector<std::list<Intersection>>> intersectionOnRay;
+    void FindIntersection(const Mesh& mesh, BoundingBox& space);
+    bool IsIntersectant(const boost::rational<int>& x, const boost::rational<int>& y, Coordinate v1, Coordinate v2, Coordinate v3);
+    void InsertIntersection(const int i, const int j, Intersection& point, int faceNum);
+};
+
+struct Command
+{
     Command(int argc, char const *argv[]);
     ~Command(){};
     
-    std::string inputFile, outputFile;
-    bool reverseFaceNormal = false;
-    Coordinate spaceLowerBound{0,0,0}, spaceUpperBound{255,255,255}, voxelAmt{255,255,255};
+    std::string meshFile, voxelFile;
+    bool insideout = false;
+    Vector ray{0,0,1};
+    BoundingBox space;
+    Counter voxelAmount{255,255,255};
 };
 
 #endif
