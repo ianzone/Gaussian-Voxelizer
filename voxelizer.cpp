@@ -282,7 +282,7 @@ void Mesh::WriteOut(std::string meshFile)
 
         for (auto itr = face.begin(); itr != face.end(); ++itr)
         {
-            triMesh << "3 " << (*itr)[0] <<' '<< (*itr)[1] <<' '<< (*itr)[2] <<'\n';
+            triMesh << "3 " << (*itr)[2] <<' '<< (*itr)[1] <<' '<< (*itr)[0] <<'\n';
         }
     }
     else
