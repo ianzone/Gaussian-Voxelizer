@@ -1,22 +1,25 @@
 # Gaussian-Voxelizer
+
 To voxelize an .off mesh:<br>
 　　./a.out -i righthand.off -o righthand_new.raw -sl 0 0 0 -su 128 128 128 -n 128 128 128<br>
 You need to use voxel viewer tool like Fiji to view the .raw file.
+
 # Report
 
-<center><img src="media/esiee.png" width=40%>
+<p align='center'>
+    <img src="media/esiee.png" width=40%>
+</p>
 
-## Gaussian Voxelization with Ray-Mesh Intersection Point Classification Method
+<h2 align='center'>
+    Gaussian Voxelization with Ray-Mesh Intersection Point Classification Method
+</h2>
+<h3 align='center'>
+Supervisor: Yukiko Kenmochi<br>
+Reporter: Yiheng Zhang<br>
+02/10/2018
+</h3>
 
-### Supervisor: Yukiko Kenmochi
-
-### Reporter: Yiheng Zhang
-
-### 02/10/2018
-</center>
-
-Abstract
-========
+## Abstract
 
 This paper presents a Gaussian voxelization algorithm for manifold and
 water-tight polygon mesh.
@@ -33,8 +36,7 @@ appropriate voxel size.
 
 **Keywords:** Gaussian voxelization, ray-mesh intersection
 
-Introduction
-============
+## Introduction
 
 The 3D discrete space is represented as a set of grid points such as integer
 Cartesian coordinates (x, y, z) in 3D Euclidean space. The voxel is a unit cubic
@@ -64,8 +66,7 @@ paper, we studied and borrowed two main ideas, ray-triangle intersection
 processing and general voxelization scheme from existing algorithms, and then
 come up with our gaussian voxelization algorithm.
 
-Related work
-============
+## Related work
 
 Fakir S. Nooruddin and Greg Turk proposed a ray casting method called “parity
 count” to solve point-in-polygon problem for non-watertight mesh [1]. The idea
@@ -75,18 +76,15 @@ inside of the model, an even number indicates the voxel is outside. In essence,
 the rays are parallel and casted on a plane of two axes. The rays go through the
 mesh and each of them would identify all the voxels along the ray.
 
-<figure><center>
-    <img src="media/1a.png" alt="Figure1 a"> 　　　<img src="media/1b.png" alt="Figure1 b">
-    <p>(a)　　　　　　　　　　　　　　　　　　　　　　　　 (b)</p>
+<figure align='center'>
+    <img src="media/1.png" alt="Figure1">
     <figcaption><strong>Fig.1. (a)</strong> A profile of an object that voxelized by parity count. Direction
 of rays is from left to right, black dots are voxels inside mesh, while other
 voxels are outside mesh, blue circles are ray-mesh intersection points. <strong>(b)</strong> The
 ambiguity of counting intersections on vertex or polygon surface. Blue circles
 are intersection points, red circles are unwanted extra voxels, green circles
 are unwanted lost voxels.</figcaption>
-</center></figure>
-
-
+</figure>
 
 Usually, the voxelization like Fig.1a works fine with parity count. At initial
 state, all voxel counting values are 0. Along each ray (horizontal line), for each intersection point (the blue circle), all voxel values behind would
@@ -103,8 +101,7 @@ rays and iteratively check if ray’s origin is covered by projected triangle in
 the range of projected triangle’s bounding box [2]. We also inserted this
 procedure into our algorithm.
 
-Gaussian voxelization
-=====================
+## Gaussian voxelization
 
 To avoid the problem of parity count, we suggest to classify all intersection
 points and validate voxels based on the points tag along each ray to achieve
@@ -113,22 +110,19 @@ Gaussian voxelization. We define four intersection point tags which are “enter
 intersection cases like Fig.2, using the sign of the dot product of a ray and
 intersected triangle’s normal.
 
-<figure><center>
+<figure align='center'>
     <img src="media/2.png" alt="Figure2">
     <figcaption><strong>Fig.2.</strong> Ray-triangle intersection cases.</figcaption>
-</center></figure>
+</figure>
 
 An intersection point could be shared by multiple triangles when it is on the
 edge or vertex of the triangle, therefore, we need to analyze all intersection
 cases of a point before tagging it.
 
-<figure><center>
-    <img src="media/3a.png" alt="Figure 3a"> <img src="media/3b.png" alt="Figure 3b"> <img src="media/3c.png" alt="Figure 3c"> <img src="media/3d.png" alt="Figure 3d">
-    <p>(a)　　　　　　　　　　(b)　　　　　　　　　　　(c)　　　　　　　　　　　　(d)</p>
-    <img src="media/3e.png" alt="Figure 3e"> <img src="media/3f.png" alt="Figure 3f"> <img src="media/3g.png" alt="Figure 3g">
-    <p>(e)　　　　　　　　　　　　　　　　　　(f)　　　　　　　　　　　　　　　　　　　　　　　　(g)</p>
+<figure align='center'>
+    <img src="media/3.png" alt="Figure3">
     <figcaption><strong>Fig.3.</strong> General conditions of ray-mesh intersection, ray direction from left to right, red dots are intersection points.</figcaption>
-</center></figure>
+</figure>
 
 We use “T” to represent a set of triangles that are sharing an intersection
 point and “t” to represent the triangle in “T”. By observing the example Fig.3a,
@@ -168,9 +162,8 @@ However, the intersection point in Fig.d would be fixed as “enter” and “ex
 For conditions like Fig.e, Fig.f and Fig.g, the further classification is
 needed.
 
-<figure><center>
-    <img src="media/4a.png" alt="Figure4 a"> <img src="media/4b.png" alt="Figure4 b"> <img src="media/4c.png" alt="Figure4 c">
-    <p>(a) 　　　　　　　　　　　　　　　　　　　　　　　　　(b)　　　　　　　　　　　　　　　　　　　　　 (c)</p>
+<figure align='center'>
+    <img src="media/4.png" alt="Figure4">
     <figcaption><strong>Fig.4.</strong> The rays’ origin plane projection of the intersection point and its
 opposite edges in related triangles. (a) Projection of Fig.e. (b) Projection of
 Fig.f. (c) Projection of Fig.g, the circled dot means ray is vertical to the
@@ -179,7 +172,7 @@ paper and going out.</figcaption><br>
     <figcaption><strong>Fig.5.</strong> General conditions of ray-shape intersection, red dots and circled
 dots are projected intersection points, green dots are ray-shape intersection
 point.</figcaption>
-</center></figure>
+</figure>
 
 Because of the existing condition
 $$
@@ -217,16 +210,12 @@ voxel dataset is created.
 
 The full algorithm is put in the appendix.
 
-Implementation and result
-=========================
+## Implementation and result
 
-<figure><center>
-    <img src="media/6a.png" alt="Figure 6a"> <img src="media/6b.png" alt="Figure 6b"><br>
-    <p>(a)　　　　　　　　　　　　　　　　　　 (b)</p>
-    <img src="media/6c.png" alt="Figure 6c"> <img src="media/6d.png" alt="Figure 6d">
-    <p>(c)　　　　　　　　　　　　　　　　　　 (d)</p>
+<figure align='center'>
+    <img src="media/6.png" alt="Figure 6">
     <figcaption><strong>Fig.6.</strong> (a) profile with z = 63 of original voxel set with size 128*128*128; (b) profile with z = 63 of gaussian voxelized new voxel set; (c) subtraction of original voxel set and new voxel set; (d) subtraction of new voxel set and original voxel set</figcaption>
-</center></figure>
+</figure>
 
 The program is written in C++ with boost library included. In order to avoid
 inaccurate calculations caused by precision limitations of float and double
@@ -242,8 +231,7 @@ program can be boosted by using multithread processing when processing the
 triangles of the mesh. The voxel data can be stored in bitwise or octree to
 reduce the data volume.
 
-References
-==========
+## References
 
 1.  Fakir S. Nooruddin and Greg Turk, “Simplification and Repair of Polygonal
     Models Using Volumetric Techniques”, *IEEE Translation Visualization and
@@ -252,8 +240,7 @@ References
 2.  Michael Schwarz and Hans-Peter Seidel, “Fast Parallel Surface and Solid
     Voxelization on GPUs”, *ACM Translation on Graphics*, 29, December 2010
 
-Appendix
-========
+## Appendix
 
 **Algorithm:** Gaussian_Voxelization<br>
 **Input:** mesh = (Vertex, Face); space size $S_{\text{minx}}$,
