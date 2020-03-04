@@ -76,20 +76,20 @@ inside of the model, an even number indicates the voxel is outside. In essence,
 the rays are parallel and casted on a plane of two axes. The rays go through the
 mesh and each of them would identify all the voxels along the ray.
 
-<figure align='center'>
-    <img src="media/1.png" alt="Figure1">
-    <figcaption><strong>Fig.1. (a)</strong> A profile of an object that voxelized by parity count. Direction
+<p align='center'>
+    <img src="media/1.png" alt="p1"><br>
+    <strong>Fig1. (a)</strong> A profile of an object that voxelized by parity count. Direction
 of rays is from left to right, black dots are voxels inside mesh, while other
 voxels are outside mesh, blue circles are ray-mesh intersection points. <strong>(b)</strong> The
 ambiguity of counting intersections on vertex or polygon surface. Blue circles
 are intersection points, red circles are unwanted extra voxels, green circles
-are unwanted lost voxels.</figcaption>
-</figure>
+are unwanted lost voxels.
+</p>
 
-Usually, the voxelization like Fig.1a works fine with parity count. At initial
+Usually, the voxelization like Fig1.a works fine with parity count. At initial
 state, all voxel counting values are 0. Along each ray (horizontal line), for each intersection point (the blue circle), all voxel values behind would
 increase 1, then the interior voxels’ value are all odd numbers and outside
-voxels’ value are all even numbers. However, the situation like Fig.1b is not
+voxels’ value are all even numbers. However, the situation like Fig1.b is not
 neglectable, but Fakir S. Nooruddin and Greg Turk didn’t explain how would
 parity count work with intersection points on the mesh vertices or surfaces. The
 idea of ray casting inspired our further works.
@@ -107,37 +107,37 @@ To avoid the problem of parity count, we suggest to classify all intersection
 points and validate voxels based on the points tag along each ray to achieve
 Gaussian voxelization. We define four intersection point tags which are “enter”,
 “exit”, “touch_start” and “touch_end”. We also need to define three ray-triangle
-intersection cases like Fig.2, using the sign of the dot product of a ray and
+intersection cases like Fig2, using the sign of the dot product of a ray and
 intersected triangle’s normal.
 
-<figure align='center'>
-    <img src="media/2.png" alt="Figure2">
-    <figcaption><strong>Fig.2.</strong> Ray-triangle intersection cases.</figcaption>
-</figure>
+<p align='center'>
+    <img src="media/2.png" alt="p2"><br>
+    <strong>Fig2.</strong> Ray-triangle intersection cases.
+</p>
 
 An intersection point could be shared by multiple triangles when it is on the
 edge or vertex of the triangle, therefore, we need to analyze all intersection
 cases of a point before tagging it.
 
-<figure align='center'>
-    <img src="media/3.png" alt="Figure3">
-    <figcaption><strong>Fig.3.</strong> General conditions of ray-mesh intersection, ray direction from left to right, red dots are intersection points.</figcaption>
-</figure>
+<p align='center'>
+    <img src="media/3.png" alt="p3"><br>
+    <strong>Fig3.</strong> General conditions of ray-mesh intersection, ray direction from left to right, red dots are intersection points.
+</p>
 
 We use “T” to represent a set of triangles that are sharing an intersection
-point and “t” to represent the triangle in “T”. By observing the example Fig.3a,
+point and “t” to represent the triangle in “T”. By observing the example Fig3.a,
 we can easily conclude that these three intersection points should be tagged as
 “enter” while they satisfy 
 $$
 \forall t \in T,\ \overrightarrow{n_{t}} \overrightarrow{r} < 0
 $$
-Similarly, the three intersection points in Fig.3b
+Similarly, the three intersection points in Fig3.b
 should be tagged as “exit” while they satisfy
 $$
 \forall t \in T,\ \overrightarrow{n_{t}} \overrightarrow{r} > 0
 $$
 For the four intersection
-points in Fig.3c, they satisfy
+points in Fig3.c, they satisfy
 $$
 \exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} = 0
 $$
@@ -152,37 +152,34 @@ vertices, we don’t tag anything and continue to process next triangle. The
 reason to do this trick is that we need the point with tag “exit” or “exit” and
 “touch_end” to stop voxel validation along the ray.
 
-The Fig.d, Fig.e, Fig.f, Fig.g all satisfy that
+The Fig3.d, Fig3.e, Fig3.f, Fig3.g all satisfy that
 $$
 (\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} < 0) \land
 (\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} > 0) \land
 (\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} = 0)
 $$
-However, the intersection point in Fig.d would be fixed as “enter” and “exit” and shared by two triangles.
-For conditions like Fig.e, Fig.f and Fig.g, the further classification is
+However, the intersection point in Fig.d would be fixed as “enter” and “exit” and shared by two triangles. For conditions like Fig3.e, Fig3.f and Fig3.g, the further classification is
 needed.
 
-<figure align='center'>
-    <img src="media/4.png" alt="Figure4">
-    <figcaption><strong>Fig.4.</strong> The rays’ origin plane projection of the intersection point and its
-opposite edges in related triangles. (a) Projection of Fig.e. (b) Projection of
-Fig.f. (c) Projection of Fig.g, the circled dot means ray is vertical to the
-paper and going out.</figcaption><br>
-    <img src="media/5.png" alt="Figure5">
-    <figcaption><strong>Fig.5.</strong> General conditions of ray-shape intersection, red dots and circled
-dots are projected intersection points, green dots are ray-shape intersection
-point.</figcaption>
-</figure>
+<p align='center'>
+    <img src="media/4.png" alt="p4"><br>
+    <strong>Fig4.</strong> The rays’ origin plane projection of the intersection point and its opposite edges in related triangles. (a) Projection of Fig3.e; (b) Projection of Fig3.f; (c) Projection of Fig3.g, the circled dot means ray is vertical to the paper and going out.
+</p>
+
+<p align='center'>
+    <img src="media/5.png" alt="p5"><br>
+    <strong>Fig5.</strong> General conditions of ray-shape intersection, red dots and circled dots are projected intersection points, green dots are ray-shape intersection point.
+</p>
 
 Because of the existing condition
 $$
 (\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} = 0)
 $$
 tag “touch_start” and “touch_end” are not enabled
-now, then after the projection as Fig.4, the projected intersection point would
+now, then after the projection as Fig4., the projected intersection point would
 only be interior or exterior to the projected shape, therefore, if the point is
-outside the shape, we can easily identify the condition Fig.3e. To do this
-classification, we propose a variant of parity count method. Take Fig.5 for
+outside the shape, we can easily identify the condition Fig3.e. To do this
+classification, we propose a variant of parity count method. Take Fig5. for
 example, on the projected plane, we cast a ray from the projected intersection
 point to the opposite direction of an axis, if the ray is on an edge, we
 collapse this edge and recast the ray. When there is an intersection point on
@@ -212,18 +209,18 @@ The full algorithm is put in the appendix.
 
 ## Implementation and result
 
-<figure align='center'>
-    <img src="media/6.png" alt="Figure 6">
-    <figcaption><strong>Fig.6.</strong> (a) profile with z = 63 of original voxel set with size 128*128*128; (b) profile with z = 63 of gaussian voxelized new voxel set; (c) subtraction of original voxel set and new voxel set; (d) subtraction of new voxel set and original voxel set</figcaption>
-</figure>
+<p align='center'>
+    <img src="media/6.png" alt="p 6"><br>
+    <strong>Fig6.</strong> (a) profile with z = 63 of original voxel set with size 128*128*128; (b) profile with z = 63 of gaussian voxelized new voxel set; (c) subtraction of original voxel set and new voxel set; (d) subtraction of new voxel set and original voxel set.
+</p>
 
 The program is written in C++ with boost library included. In order to avoid
 inaccurate calculations caused by precision limitations of float and double
 type, the boost rational type is used to participate all mathematical
 calculations. After implementing voxelization, we subtract original voxel set
-with new voxel set, the window shows as Fig.6c which indicate no voxel is lost.
+with new voxel set, the window shows as Fig6.c which indicate no voxel is lost.
 Later we subtract new voxel set with original voxel set, the window shows as
-Fig.6d which means no extra voxel is created. By now, from algorithm to
+Fig6.d which means no extra voxel is created. By now, from algorithm to
 implementation, we have achieved gaussian voxelization.
 
 There are two feasible features that can improve the program in the future. The
