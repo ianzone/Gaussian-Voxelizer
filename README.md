@@ -2,7 +2,7 @@
 
 To voxelize an .off mesh:<br>
 　　./a.out -i righthand.off -o righthand_new.raw -sl 0 0 0 -su 128 128 128 -n 128 128 128<br>
-You need to use voxel viewer tool like Fiji to view the .raw file.
+You need to use voxel viewer tool like Fiji to view the .raw file.<br>
 Knowing issue: the arithmetic operations may cause overflow if the mesh file uses too much digits to represent a coordinate
 
 # Report
