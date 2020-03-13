@@ -42,10 +42,11 @@ cmake_install.cmake
 install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
+build
 _deps
 
 # User
-.vscode/
-draft/
+.vscode
+draft
 *.raw
 gv
