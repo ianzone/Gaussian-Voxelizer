@@ -2,9 +2,6 @@
 
 Mesh::Mesh(const std::string& meshFile,  const bool insideout) : fileName(meshFile), reverseNormal(insideout)
 {
-    #ifdef DBG
-        dbgmsg(__func__, __LINE__);
-    #endif
     std::ifstream data(fileName);
     if (!data)
     {
@@ -120,9 +117,6 @@ Mesh::Mesh(const std::string& meshFile,  const bool insideout) : fileName(meshFi
 
 void Mesh::WriteOut(std::string meshFile)
 {
-    #ifdef DBG
-        dbgmsg(__func__, __LINE__);
-    #endif
     if (triangulated or reverseNormal)
     {
         if (meshFile.empty() or meshFile == fileName)

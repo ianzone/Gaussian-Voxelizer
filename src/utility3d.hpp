@@ -13,19 +13,6 @@
 #include <functional>
 #include <unordered_map>
 #include "gmpxx.h"
-#include "config.h"
-
-#ifdef DBG
-    void dbgmsg(const std::string& func, const int line)
-    {
-        static std::string lastcall;
-        if (lastcall != func)
-        {
-            std::cout << "Executing " <<func<< "() in line: " << line << std::endl;
-            lastcall = func;
-        }
-    }
-#endif
 
 mpq_class stor(const std::string& str);
 

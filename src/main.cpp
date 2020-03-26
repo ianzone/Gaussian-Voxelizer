@@ -98,6 +98,9 @@ int main(int argc, char const *argv[])
     {
         std::istringstream str(meshFile);
         std::getline(str, voxelFile, '.');
+        auto pos = voxelFile.find_last_of('/');
+        if (pos != std::string::npos)
+            voxelFile = voxelFile.substr(pos+1);
         voxelFile+=".raw";
     }
     

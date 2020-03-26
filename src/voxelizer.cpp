@@ -7,9 +7,6 @@ Voxelizer::Voxelizer(const Mesh& mesh, BoundingBox& space, const Counter& voxelA
 
 void Voxelizer::Voxelize(const Mesh& mesh, BoundingBox& space, const Counter& voxelAmount)
 {
-    #ifdef DBG
-        dbgmsg(__func__, __LINE__);
-    #endif
     std::string str;
     while (mesh.bound.min.x < space.min.x or mesh.bound.min.y < space.min.y or mesh.bound.min.z < space.min.z)
     {
@@ -96,9 +93,6 @@ void Voxelizer::Voxelize(const Mesh& mesh, BoundingBox& space, const Counter& vo
 
 void Voxelizer::WriteOut(const std::string& voxelFile)
 {
-    #ifdef DBG
-        dbgmsg(__func__, __LINE__);
-    #endif
     std::ofstream voxelSet(voxelFile);
     if (!voxelSet)
     {
@@ -116,9 +110,6 @@ void Voxelizer::WriteOut(const std::string& voxelFile)
 
 void Voxelizer::FindIntersection(const Mesh& mesh, BoundingBox& space)
 {
-    #ifdef DBG
-        dbgmsg(__func__, __LINE__);
-    #endif
     for (int faceNum = 0; faceNum < mesh.faceAmt; ++faceNum)
     {
         // three vertices of the triangle
@@ -238,9 +229,6 @@ void Voxelizer::FindIntersection(const Mesh& mesh, BoundingBox& space)
         }
     }
 
-    #ifdef DBG
-        dbgmsg(__func__, __LINE__);
-    #endif
     // deal with the point on vertex
     // project the point and bottom edge of shared triangles to the plane that is perpendicular to the ray
     // if the point is inside projected polygon, the ray is entering
@@ -342,9 +330,6 @@ void Voxelizer::FindIntersection(const Mesh& mesh, BoundingBox& space)
 
 bool Voxelizer::IsIntersectant(const mpq_class& i, const mpq_class& j, Coordinate v1, Coordinate v2, Coordinate v3)
 {
-    #ifdef DBG
-        dbgmsg(__func__, __LINE__);
-    #endif
     Coordinate p{i, j, 0};
     v1.z = v2.z = v3.z = 0;
     Vector p1(p, v1), p2(p, v2), p3(p, v3);
@@ -355,10 +340,6 @@ bool Voxelizer::IsIntersectant(const mpq_class& i, const mpq_class& j, Coordinat
 
 void Voxelizer::InsertIntersection(const int i, const int j, Intersection& point, int faceNum)
 {
-    #ifdef DBG
-        dbgmsg(__func__, __LINE__);
-    #endif
-
     point.sharedFaces.push_back(faceNum);
 
     if (intersectionOnRay[i][j].empty())
