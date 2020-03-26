@@ -138,25 +138,25 @@ cases of a point before tagging it.
 We use “T” to represent a set of triangles that are sharing an intersection
 point and “t” to represent the triangle in “T”. By observing the example Fig3.a, we can easily conclude that these three intersection points should be tagged as “enter” while they satisfy 
 
-<p align="center"><img src="http://latex.codecogs.com/gif.latex?\forall t \in T,\ \overrightarrow{n_{t}} \overrightarrow{r} < 0"></p>
+<p align="center"><img src="https://latex.codecogs.com/png.latex?\dpi{120}&space;\fn_cm&space;\forall&space;t&space;\in&space;T,\&space;\overrightarrow{n_{t}}&space;\overrightarrow{r}&space;<&space;0" title="\forall t \in T,\ \overrightarrow{n_{t}} \overrightarrow{r} < 0" /></p>
 
 Similarly, the three intersection points in Fig3.b should be tagged as “exit” while they satisfy
 
-<p align="center"><img src="http://latex.codecogs.com/gif.latex?\forall t \in T,\ \overrightarrow{n_{t}} \overrightarrow{r} > 0"></p>
+<p align="center"><img src="https://latex.codecogs.com/png.latex?\dpi{120}&space;\fn_cm&space;\forall&space;t&space;\in&space;T,\&space;\overrightarrow{n_{t}}&space;\overrightarrow{r}&space;>&space;0" title="\forall t \in T,\ \overrightarrow{n_{t}} \overrightarrow{r} > 0" /></p>
 
 For the four intersection points in Fig3.c, they satisfy
 
-<p align="center"><img src="http://latex.codecogs.com/gif.latex?\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} = 0"></p>
+<p align="center"><img src="https://latex.codecogs.com/png.latex?\dpi{120}&space;\fn_cm&space;\exists&space;t&space;\in&space;T,\overrightarrow{n_{t}}&space;\overrightarrow{r}&space;=&space;0" title="\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} = 0" /></p>
 
 the left two points would have the tag “touch_start” and the right two points would contain the tag “touch_end”. There is a triangle processing trick, when
 
-<p align="center"><img src="http://latex.codecogs.com/gif.latex?\overrightarrow{n_{t}} \overrightarrow{r} = 0"></p>
+<p align="center"><img src="https://latex.codecogs.com/png.latex?\dpi{120}&space;\fn_cm&space;\overrightarrow{n_{t}}&space;\overrightarrow{r}&space;=&space;0" title="\overrightarrow{n_{t}} \overrightarrow{r} = 0" /></p>
 
 and there is only one intersection point and the point is one of the triangle vertices, we don’t tag anything and continue to process next triangle. The reason to do this trick is that we need the point with tag “exit” or “exit” and “touch_end” to stop voxel validation along the ray.
 
 The Fig3.d, Fig3.e, Fig3.f, Fig3.g all satisfy that
 
-<p align="center"><img src="https://latex.codecogs.com/gif.latex?(\exists&space;t&space;\in&space;T,\overrightarrow{n_{t}}&space;\overrightarrow{r}&space;<&space;0)&space;\land&space;(\exists&space;t&space;\in&space;T,\overrightarrow{n_{t}}&space;\overrightarrow{r}&space;>&space;0)&space;\land&space;(\exists&space;t&space;\in&space;T,\overrightarrow{n_{t}}&space;\overrightarrow{r}&space;=&space;0)" title="(\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} < 0) \land (\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} > 0) \land (\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} = 0)" /></p>
+<p align="center"><img src="https://latex.codecogs.com/png.latex?\dpi{120}&space;\fn_cm&space;(\exists&space;t&space;\in&space;T,\overrightarrow{n_{t}}&space;\overrightarrow{r}&space;<&space;0)&space;\land&space;(\exists&space;t&space;\in&space;T,\overrightarrow{n_{t}}&space;\overrightarrow{r}&space;>&space;0)&space;\land&space;(\exists&space;t&space;\in&space;T,\overrightarrow{n_{t}}&space;\overrightarrow{r}&space;=&space;0)" title="(\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} < 0) \land (\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} > 0) \land (\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} = 0)" /></p>
 
 However, the intersection point in Fig.d would be fixed as “enter” and “exit” and shared by two triangles. For conditions like Fig3.e, Fig3.f and Fig3.g, the further classification is
 needed.
@@ -173,7 +173,7 @@ needed.
 
 Because of the existing condition
 
-<p align="center"><img src="https://latex.codecogs.com/gif.latex?(\exists&space;t&space;\in&space;T,\overrightarrow{n_{t}}&space;\overrightarrow{r}&space;=&space;0)" title="(\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} = 0)" /></p>
+<p align="center"><img src="https://latex.codecogs.com/png.latex?\dpi{120}&space;\fn_cm&space;(\exists&space;t&space;\in&space;T,\overrightarrow{n_{t}}&space;\overrightarrow{r}&space;=&space;0)" title="(\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} = 0)" /></p>
 
 tag “touch_start” and “touch_end” are not enabled
 now, then after the projection as Fig4., the projected intersection point would
@@ -240,8 +240,8 @@ reduce the data volume.
 ## Appendix
 
 **Algorithm:** Gaussian_Voxelization<br>
-**Input:** mesh = (Vertex, Face); space size <img src="https://latex.codecogs.com/gif.latex?S_{\text{minx}},&space;S_{\text{miny}},&space;S_{\text{minz}},&space;S_{\text{maxx}},&space;S_{\text{maxy}},S_{\text{maxz}}" title="S_{\text{minx}}, S_{\text{miny}}, S_{\text{minz}}, S_{\text{maxx}}, S_{\text{maxy}},S_{\text{maxz}}" />; number of voxels for x-axis, y-axis
-and z-axis <img src="https://latex.codecogs.com/gif.latex?N_{x},N_{y},N_{z}" title="N_{x},N_{y},N_{z}" />; ray direction d.<br>
+**Input:** mesh = (Vertex, Face); space size <img src="https://latex.codecogs.com/png.latex?\inline&space;\dpi{120}&space;\fn_cm&space;S_{\text{minx}},S_{\text{miny}},S_{\text{minz}},S_{\text{maxx}},S_{\text{maxy}},S_{\text{maxz}}" title="S_{\text{minx}},S_{\text{miny}},S_{\text{minz}},S_{\text{maxx}},S_{\text{maxy}},S_{\text{maxz}}" /> ; number of voxels for x-axis, y-axis
+and z-axis <img src="https://latex.codecogs.com/png.latex?\inline&space;\dpi{120}&space;\fn_cm&space;N_{x},N_{y},N_{z}" title="N_{x},N_{y},N_{z}" /> ; ray direction d.<br>
 **Output:** voxelset<br>
 **initialization**<br>
 **for** each f ∈ Face<br>
