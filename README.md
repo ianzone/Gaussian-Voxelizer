@@ -5,7 +5,15 @@ Run demo:<br>
 　　./demo.sh<br>
 Display parameter info<br>
 　　./gv<br>
-You need to use image viewer tool like Fiji to view the output .raw file.<br>
+You need to use image viewer tool like <a href="https://imagej.net/Fiji/Downloads">Fiji</a> to view the output .raw file.<br>
+Take this demo for example, you need to open Fiji,<br>
+Click File → Import → Raw<br>
+Select bunny.raw<br>
+Set Image type: 8-bit<br>
+　　Width: 500<br>
+　　Height: 500<br>
+　　Number of images: 500<br>
+Click OK
 
 # Report
 
@@ -128,39 +136,28 @@ cases of a point before tagging it.
 </p>
 
 We use “T” to represent a set of triangles that are sharing an intersection
-point and “t” to represent the triangle in “T”. By observing the example Fig3.a,
-we can easily conclude that these three intersection points should be tagged as
-“enter” while they satisfy 
-$$
-\forall t \in T,\ \overrightarrow{n_{t}} \overrightarrow{r} < 0
-$$
-Similarly, the three intersection points in Fig3.b
-should be tagged as “exit” while they satisfy
-$$
-\forall t \in T,\ \overrightarrow{n_{t}} \overrightarrow{r} > 0
-$$
-For the four intersection
-points in Fig3.c, they satisfy
-$$
-\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} = 0
-$$
-the left two points would have the tag “touch_start”
-and the right two points would contain the tag “touch_end”. There is a triangle
-processing trick, when
-$$
-\overrightarrow{n_{t}} \overrightarrow{r} = 0
-$$
-and there is only one intersection point and the point is one of the triangle
-vertices, we don’t tag anything and continue to process next triangle. The
-reason to do this trick is that we need the point with tag “exit” or “exit” and
-“touch_end” to stop voxel validation along the ray.
+point and “t” to represent the triangle in “T”. By observing the example Fig3.a, we can easily conclude that these three intersection points should be tagged as “enter” while they satisfy 
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?\forall t \in T,\ \overrightarrow{n_{t}} \overrightarrow{r} < 0"></p>
+
+Similarly, the three intersection points in Fig3.b should be tagged as “exit” while they satisfy
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?\forall t \in T,\ \overrightarrow{n_{t}} \overrightarrow{r} > 0"></p>
+
+For the four intersection points in Fig3.c, they satisfy
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} = 0"></p>
+
+the left two points would have the tag “touch_start” and the right two points would contain the tag “touch_end”. There is a triangle processing trick, when
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?\overrightarrow{n_{t}} \overrightarrow{r} = 0"></p>
+
+and there is only one intersection point and the point is one of the triangle vertices, we don’t tag anything and continue to process next triangle. The reason to do this trick is that we need the point with tag “exit” or “exit” and “touch_end” to stop voxel validation along the ray.
 
 The Fig3.d, Fig3.e, Fig3.f, Fig3.g all satisfy that
-$$
-(\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} < 0) \land
-(\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} > 0) \land
-(\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} = 0)
-$$
+
+<p align="center"><img src="https://latex.codecogs.com/gif.latex?(\exists&space;t&space;\in&space;T,\overrightarrow{n_{t}}&space;\overrightarrow{r}&space;<&space;0)&space;\land&space;(\exists&space;t&space;\in&space;T,\overrightarrow{n_{t}}&space;\overrightarrow{r}&space;>&space;0)&space;\land&space;(\exists&space;t&space;\in&space;T,\overrightarrow{n_{t}}&space;\overrightarrow{r}&space;=&space;0)" title="(\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} < 0) \land (\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} > 0) \land (\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} = 0)" /></p>
+
 However, the intersection point in Fig.d would be fixed as “enter” and “exit” and shared by two triangles. For conditions like Fig3.e, Fig3.f and Fig3.g, the further classification is
 needed.
 
@@ -175,9 +172,9 @@ needed.
 </p>
 
 Because of the existing condition
-$$
-(\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} = 0)
-$$
+
+<p align="center"><img src="https://latex.codecogs.com/gif.latex?(\exists&space;t&space;\in&space;T,\overrightarrow{n_{t}}&space;\overrightarrow{r}&space;=&space;0)" title="(\exists t \in T,\overrightarrow{n_{t}} \overrightarrow{r} = 0)" /></p>
+
 tag “touch_start” and “touch_end” are not enabled
 now, then after the projection as Fig4., the projected intersection point would
 only be interior or exterior to the projected shape, therefore, if the point is
@@ -243,63 +240,61 @@ reduce the data volume.
 ## Appendix
 
 **Algorithm:** Gaussian_Voxelization<br>
-**Input:** mesh = (Vertex, Face); space size $S_{\text{minx}}$,
-$S_{\text{miny}}$, $S_{\text{minz}}$, $S_{\text{maxx}}$,
-$S_{\text{maxy}}$, $S_{\text{maxz}}$; number of voxels for x-axis, y-axis
-and z-axis $N_{x}$, $N_{y}$, $N_{z}$; ray direction d.<br>
+**Input:** mesh = (Vertex, Face); space size <img src="https://latex.codecogs.com/gif.latex?S_{\text{minx}},&space;S_{\text{miny}},&space;S_{\text{minz}},&space;S_{\text{maxx}},&space;S_{\text{maxy}},S_{\text{maxz}}" title="S_{\text{minx}}, S_{\text{miny}}, S_{\text{minz}}, S_{\text{maxx}}, S_{\text{maxy}},S_{\text{maxz}}" />; number of voxels for x-axis, y-axis
+and z-axis <img src="https://latex.codecogs.com/gif.latex?N_{x},N_{y},N_{z}" title="N_{x},N_{y},N_{z}" />; ray direction d.<br>
 **Output:** voxelset<br>
 **initialization**<br>
 **for** each f ∈ Face<br>
-　　normal $:=$ FACE_NORMAL (f)<br>
-　　dot_production $:=$ RAY_NORMAL_DOT_PRODUCTION (normal, d)<br>
-　　rayset $:=$ RAY_RAYSET (f, d) // find the set of rays going through f with
+　　normal := FACE_NORMAL(f)<br>
+　　dot_production := RAY_NORMAL_DOT_PRODUCTION (normal, d)<br>
+　　rayset := RAY_RAYSET (f, d) // find the set of rays going through f with
 direction d<br>
-**for** each $\text{ray} \in \text{rayset}$<br>
-　　point.value $:=$ FIND_INTERSECTION (f, ray)<br>
+**for** each ray ∈ rayset<br>
+　　point.value := FIND_INTERSECTION (f, ray)<br>
 　　//if dot_production = 0, return first and last point value<br>
 　　//if first point.value equals to last point.value, jump to next loop<br>
 **if** dot_production < 0<br>
-　　**then** point.enter $:=$ true<br>
+　　**then** point.enter := true<br>
 **else if** dot_production > 0<br>
-　　**then** point.exit $:=$ true<br>
+　　**then** point.exit := true<br>
 **else if** dot_production = 0<br>
-　　**then** point.touch_start $:=$ true,
-point.touch_end $:=$ true<br>
-**if** point $\notin$ intersection_list<br>
+　　**then** point.touch_start := true,
+point.touch_end := true<br>
+**if** point ∉ intersection_list<br>
 　　**then** insert point into intersection_list by point.value increasing order<br>
 **else** locate point in intersection_list<br>
-　　intersection_list.point.enter $:=$ intersection_list.point.enter **or**
+　　intersection_list.point.enter := intersection_list.point.enter **or**
 point.enter<br>
-　　intersection_list.point.exit $:=$ intersection_list.point.exit **or**
+　　intersection_list.point.exit := intersection_list.point.exit **or**
 point.exit<br>
-　　intersection_list.point.touch$\  :=$ intersection_list.point.touch **or**
+　　intersection_list.point.touch := intersection_list.point.touch **or**
 point.touch<br>
 **for** each ray in direction d<br>
 　　**while** intersection_list is not empty<br>
-　　　　**for** each point $\in$ intersection_list<br>
-　　　　　　**if** point.shared_triangles $\geq$ 3<br>
+　　　　**for** each point ∈ intersection_list<br>
+　　　　　　**if** point.shared_triangles ≥ 3<br>
 　　　　　　　　**if** point.enter = true **and** point.exit = true **and** point.touch_start = false<br>
 　　　　　　　　project point and point’s opposite edges of all shared triangles into plane of
 ray’s origin<br>
 　　　　　　　　**if** projected point is not outside the polygon of projected edges<br>
-　　　　　　　　　　**if** RAY_NORMAL_DOT_PRODUCTION (polygon_normal, d) \> 0<br>
-　　　　　　　　　　　　**then** point.enter $:=$ false<br>
-　　　　　　　　　　**else** point.exit $:=$ false<br>
+　　　　　　　　　　**if** RAY_NORMAL_DOT_PRODUCTION (polygon_normal, d) > 0<br>
+　　　　　　　　　　　　**then** point.enter := false<br>
+　　　　　　　　　　**else** point.exit := false<br>
 **for** each ray in direction d<br>
 　　**while** intersection_list is not empty<br>
-　　　　**for** each point $\in$ intersection_list<br>
+　　　　**for** each point ∈ intersection_list<br>
 　　　　　　**if** point.enter = true **and** point.exit = false<br>
 　　　　　　　　**then** start_value = point.value<br>
 　　　　　　　　**while not** (point.enter = false **and** point.touch_start = false **and** point.exit = true)<br>
 　　　　　　　　　　move to next point<br>
 　　　　　　　　　　end_value = point.value<br>
-　　　　　　　　**for** each voxel_center $\in$ [start_value, end_value]<br>
+　　　　　　　　**for** each voxel_center ∈ [start_value, end_value]<br>
 　　　　　　　　　　voxel = 1<br>
 　　　　　　**else if** point.touch_start = true<br>
 　　　　　　　　start_value = point.value<br>
 　　　　　　　　move to next point<br>
 　　　　　　　　end_value = point.value<br>
-　　　　　　　　**for** each voxel_center $\in$ [start_value, end_value]<br>
+　　　　　　　　**for** each voxel_center ∈ [start_value, end_value]<br>
 　　　　　　　　　　voxel = 1<br>
 　　　　　　**else if** point.enter = true **and** point.exit = true **and** point.value = voxel_center<br>
 　　　　　　　　**then** voxel = 1<br>
